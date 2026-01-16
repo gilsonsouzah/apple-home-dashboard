@@ -188,50 +188,54 @@ export class AppleHomeCard extends HTMLElement {
       tempText = `--.-°`;
     }
 
+    // Climate and Water Heater share the same card layout:
+    // - Large target temp on the left
+    // - Chevron up/down on the right for adjusting
+    // - Current temp shown in state text below
     if (this.domain === 'climate') {
       const isActive = state.state !== 'off';
       const targetTemp = state.attributes.temperature;
       iconElement = `
+        ${isActive && targetTemp !== undefined
+          ? `
+        <div class="thermostat-top-row climate-active">
+          <div class="thermostat-target-temp" dir="ltr">${targetTemp}°</div>
+          <div class="thermostat-controls">
+            <button class="chevron-btn chevron-up" aria-label="Increase temperature">
+              <ha-icon icon="mdi:chevron-up"></ha-icon>
+            </button>
+            <button class="chevron-btn chevron-down" aria-label="Decrease temperature">
+              <ha-icon icon="mdi:chevron-down"></ha-icon>
+            </button>
+          </div>
+        </div>
+        `
+          : `
         <div class="info-icon temperature-display">
           <span class="temperature-text" dir="ltr">${tempText}</span>
         </div>
-        ${
-          isActive && targetTemp !== undefined
-            ? `
-        <div class="temp-controls">
-          <button class="temp-btn temp-down" aria-label="Decrease temperature">
-            <ha-icon icon="mdi:minus"></ha-icon>
-          </button>
-          <span class="target-temp" dir="ltr">${targetTemp}°</span>
-          <button class="temp-btn temp-up" aria-label="Increase temperature">
-            <ha-icon icon="mdi:plus"></ha-icon>
-          </button>
-        </div>
         `
-            : ''
         }
       `;
     } else if (this.domain === 'water_heater') {
       const isActive = state.state !== 'off';
       const targetTemp = state.attributes.temperature;
-      const currentTemp = state.attributes.current_temperature;
       iconElement = `
-        ${
-          isActive && targetTemp !== undefined
-            ? `
-        <div class="water-heater-top-row">
-          <div class="water-heater-target-temp" dir="ltr">${targetTemp}°</div>
-          <div class="water-heater-controls">
-            <button class="temp-btn temp-down" aria-label="Decrease temperature">
-              <ha-icon icon="mdi:minus"></ha-icon>
+        ${isActive && targetTemp !== undefined
+          ? `
+        <div class="thermostat-top-row water-heater-active">
+          <div class="thermostat-target-temp" dir="ltr">${targetTemp}°</div>
+          <div class="thermostat-controls">
+            <button class="chevron-btn chevron-up" aria-label="Increase temperature">
+              <ha-icon icon="mdi:chevron-up"></ha-icon>
             </button>
-            <button class="temp-btn temp-up" aria-label="Increase temperature">
-              <ha-icon icon="mdi:plus"></ha-icon>
+            <button class="chevron-btn chevron-down" aria-label="Decrease temperature">
+              <ha-icon icon="mdi:chevron-down"></ha-icon>
             </button>
           </div>
         </div>
         `
-            : `
+          : `
         <div class="info-icon temperature-display water-heater-display">
           <span class="temperature-text" dir="ltr">${tempText}</span>
         </div>
@@ -493,8 +497,8 @@ export class AppleHomeCard extends HTMLElement {
   private setupClickHandlers() {
     const card = this.shadowRoot!.querySelector('.apple-home-card') as HTMLElement;
     const icon = this.shadowRoot!.querySelector('.info-icon') as HTMLElement;
-    const tempUpBtn = this.shadowRoot!.querySelector('.temp-up') as HTMLElement;
-    const tempDownBtn = this.shadowRoot!.querySelector('.temp-down') as HTMLElement;
+    const chevronUpBtn = this.shadowRoot!.querySelector('.chevron-up') as HTMLElement;
+    const chevronDownBtn = this.shadowRoot!.querySelector('.chevron-down') as HTMLElement;
 
     // Store bound references for cleanup
     this.boundCardClick = this.handleCardClick.bind(this);
@@ -509,15 +513,15 @@ export class AppleHomeCard extends HTMLElement {
     }
 
     // Add temperature control handlers for climate and water_heater
-    if (tempUpBtn) {
-      tempUpBtn.addEventListener('click', (e) => {
+    if (chevronUpBtn) {
+      chevronUpBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         this.adjustTemperature(1);
       });
     }
 
-    if (tempDownBtn) {
-      tempDownBtn.addEventListener('click', (e) => {
+    if (chevronDownBtn) {
+      chevronDownBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         this.adjustTemperature(-1);
       });
@@ -772,55 +776,45 @@ export class AppleHomeCard extends HTMLElement {
         height: auto;
       }
 
-      /* Temperature controls for climate and water_heater */
-      .temp-controls {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 12px;
-        margin-top: auto;
-        padding: 8px 0;
-      }
-
-      /* Water heater top row layout */
-      .water-heater-top-row {
+      /* Thermostat layout for climate and water_heater */
+      .thermostat-top-row {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
         width: 100%;
       }
 
-      .water-heater-target-temp {
-        font-size: var(--apple-temp-font-size-tall, 38px);
+      .thermostat-target-temp {
+        font-size: var(--apple-temp-font-size-tall, 42px);
         font-weight: 700;
-        color: ${entityData.iconColor};
         font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
         letter-spacing: -0.5px;
         line-height: 1;
       }
 
-      .water-heater-controls {
+      /* Climate active = blue */
+      .thermostat-top-row.climate-active .thermostat-target-temp {
+        color: #007AFF;
+      }
+
+      /* Water heater active = orange */
+      .thermostat-top-row.water-heater-active .thermostat-target-temp {
+        color: #FF9500;
+      }
+
+      .thermostat-controls {
         display: flex;
-        gap: 8px;
+        flex-direction: column;
+        gap: 4px;
         align-items: center;
       }
 
-      /* Hide water heater top row on regular (small) cards */
-      :host(.regular-design) .water-heater-top-row {
-        display: none;
-      }
-
-      /* Show simple temperature for regular design water heater */
-      :host(.regular-design) .water-heater-display {
-        display: flex;
-      }
-
-      .temp-btn {
-        width: 36px;
-        height: 36px;
+      .chevron-btn {
+        width: 32px;
+        height: 32px;
         border-radius: 50%;
-        border: 1.5px solid ${entityData.isActive ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.3)'};
-        background: ${entityData.isActive ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.1)'};
+        border: none;
+        background: rgba(0, 0, 0, 0.08);
         color: ${entityData.textColor};
         cursor: pointer;
         display: flex;
@@ -830,31 +824,27 @@ export class AppleHomeCard extends HTMLElement {
         -webkit-tap-highlight-color: transparent;
       }
 
-      .temp-btn:hover {
-        background: ${entityData.isActive ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.2)'};
+      .chevron-btn:hover {
+        background: rgba(0, 0, 0, 0.12);
       }
 
-      .temp-btn:active {
+      .chevron-btn:active {
         transform: scale(0.95);
-        background: ${entityData.isActive ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.25)'};
+        background: rgba(0, 0, 0, 0.18);
       }
 
-      .temp-btn ha-icon {
-        --mdc-icon-size: 18px;
+      .chevron-btn ha-icon {
+        --mdc-icon-size: 22px;
       }
 
-      .target-temp {
-        font-size: 18px;
-        font-weight: 600;
-        color: ${entityData.textColor};
-        min-width: 45px;
-        text-align: center;
-        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
-      }
-
-      /* Hide temp controls on regular (small) cards */
-      :host(.regular-design) .temp-controls {
+      /* Hide thermostat top row on regular (small) cards */
+      :host(.regular-design) .thermostat-top-row {
         display: none;
+      }
+
+      /* Show simple temperature for regular design water heater */
+      :host(.regular-design) .water-heater-display {
+        display: flex;
       }
 
       .text-content {
@@ -1140,9 +1130,9 @@ export class AppleHomeCard extends HTMLElement {
   private handleCardClick(event: Event) {
     if (!this._hass || !this.entity) return;
 
-    // Check if the click was on the icon or temp controls - if so, don't handle it here
+    // Check if the click was on the icon or thermostat controls - if so, don't handle it here
     const target = event.target as HTMLElement;
-    if (target.closest('.info-icon') || target.closest('.temp-controls')) {
+    if (target.closest('.info-icon') || target.closest('.thermostat-controls')) {
       return;
     }
 
@@ -1176,15 +1166,26 @@ export class AppleHomeCard extends HTMLElement {
       return;
     }
 
-    // For water_heater, toggle on/off
+    // For water_heater, toggle on/off using operation_mode
     if (domain === 'water_heater') {
       const state = this._hass.states[this.entity];
-      if (state?.state === 'off') {
-        // Turn on
-        this._hass.callService('water_heater', 'turn_on', { entity_id: this.entity });
+      const operationList = state?.attributes?.operation_list || [];
+      const currentMode = state?.attributes?.operation_mode;
+      
+      if (currentMode === 'off' || state?.state === 'off') {
+        // Turn on - use first available mode that is not 'off'
+        const availableModes = operationList.filter((mode: string) => mode !== 'off');
+        const targetMode = availableModes.length > 0 ? availableModes[0] : 'gas';
+        this._hass.callService('water_heater', 'set_operation_mode', {
+          entity_id: this.entity,
+          operation_mode: targetMode,
+        });
       } else {
         // Turn off
-        this._hass.callService('water_heater', 'turn_off', { entity_id: this.entity });
+        this._hass.callService('water_heater', 'set_operation_mode', {
+          entity_id: this.entity,
+          operation_mode: 'off',
+        });
       }
       return;
     }
