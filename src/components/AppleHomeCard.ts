@@ -237,12 +237,14 @@ export class AppleHomeCard extends HTMLElement {
     } else if (this.domain === 'water_heater') {
       const isActive = state.state !== 'off';
       const targetTemp = state.attributes.temperature;
+      // For water_heater, always show target temp (even when off - shows last set value)
+      const displayTemp = targetTemp !== undefined && targetTemp !== null 
+        ? `${targetTemp}°` 
+        : tempText;
       iconElement = `
-        ${
-          isActive && targetTemp !== undefined
-            ? `
-        <div class="thermostat-top-row water-heater-active">
-          <div class="thermostat-target-temp" dir="ltr">${targetTemp}°</div>
+        <div class="thermostat-top-row ${isActive ? 'water-heater-active' : 'water-heater-inactive'}">
+          <div class="thermostat-target-temp" dir="ltr">${displayTemp}</div>
+          ${isActive && targetTemp !== undefined ? `
           <div class="thermostat-controls">
             <button class="chevron-btn chevron-up" aria-label="Increase temperature">
               <ha-icon icon="mdi:chevron-up"></ha-icon>
@@ -251,14 +253,8 @@ export class AppleHomeCard extends HTMLElement {
               <ha-icon icon="mdi:chevron-down"></ha-icon>
             </button>
           </div>
+          ` : ''}
         </div>
-        `
-            : `
-        <div class="info-icon temperature-display water-heater-display">
-          <span class="temperature-text" dir="ltr">${tempText}</span>
-        </div>
-        `
-        }
       `;
     } else if (this.domain === 'camera' && this.cameraView === 'snapshot') {
       const state = this._hass.states[this.entity!];
@@ -894,6 +890,11 @@ export class AppleHomeCard extends HTMLElement {
       /* Water heater active = orange */
       .thermostat-top-row.water-heater-active .thermostat-target-temp {
         color: #FF9500;
+      }
+
+      /* Water heater inactive = white (same as other inactive elements) */
+      .thermostat-top-row.water-heater-inactive .thermostat-target-temp {
+        color: ${entityData.textColor};
       }
 
       .thermostat-controls {
