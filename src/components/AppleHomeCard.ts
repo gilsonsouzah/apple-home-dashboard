@@ -126,6 +126,8 @@ export class AppleHomeCard extends HTMLElement {
       if (
         oldState.state !== newState.state ||
         oldState.attributes.brightness !== newState.attributes.brightness ||
+        oldState.attributes.temperature !== newState.attributes.temperature ||
+        oldState.attributes.current_temperature !== newState.attributes.current_temperature ||
         JSON.stringify(oldState.attributes.rgb_color) !== JSON.stringify(newState.attributes.rgb_color)
       ) {
         this.render();
@@ -195,11 +197,17 @@ export class AppleHomeCard extends HTMLElement {
     if (this.domain === 'climate') {
       const isActive = state.state !== 'off';
       const targetTemp = state.attributes.temperature;
+      // For modes like 'dry' or 'fan_only' that don't have target temp, show current temp
+      const displayTemp = targetTemp !== undefined && targetTemp !== null 
+        ? `${targetTemp}°` 
+        : (state.attributes.current_temperature !== undefined ? `${state.attributes.current_temperature.toFixed(0)}°` : '--°');
+      const hasTargetTemp = targetTemp !== undefined && targetTemp !== null;
       iconElement = `
-        ${isActive && targetTemp !== undefined
+        ${isActive
           ? `
         <div class="thermostat-top-row climate-active">
-          <div class="thermostat-target-temp" dir="ltr">${targetTemp}°</div>
+          <div class="thermostat-target-temp" dir="ltr">${displayTemp}</div>
+          ${hasTargetTemp ? `
           <div class="thermostat-controls">
             <button class="chevron-btn chevron-up" aria-label="Increase temperature">
               <ha-icon icon="mdi:chevron-up"></ha-icon>
@@ -208,6 +216,7 @@ export class AppleHomeCard extends HTMLElement {
               <ha-icon icon="mdi:chevron-down"></ha-icon>
             </button>
           </div>
+          ` : ''}
         </div>
         `
           : `
@@ -221,8 +230,9 @@ export class AppleHomeCard extends HTMLElement {
       const isActive = state.state !== 'off';
       const targetTemp = state.attributes.temperature;
       iconElement = `
-        ${isActive && targetTemp !== undefined
-          ? `
+        ${
+          isActive && targetTemp !== undefined
+            ? `
         <div class="thermostat-top-row water-heater-active">
           <div class="thermostat-target-temp" dir="ltr">${targetTemp}°</div>
           <div class="thermostat-controls">
@@ -235,7 +245,7 @@ export class AppleHomeCard extends HTMLElement {
           </div>
         </div>
         `
-          : `
+            : `
         <div class="info-icon temperature-display water-heater-display">
           <span class="temperature-text" dir="ltr">${tempText}</span>
         </div>
@@ -536,13 +546,19 @@ export class AppleHomeCard extends HTMLElement {
     if (!state) return;
 
     const currentTarget = state.attributes.temperature;
-    if (currentTarget === undefined) return;
+    if (currentTarget === undefined || currentTarget === null) return;
 
     const minTemp = state.attributes.min_temp || 7;
     const maxTemp = state.attributes.max_temp || 35;
     const step = state.attributes.target_temp_step || 1;
 
     const newTemp = Math.min(maxTemp, Math.max(minTemp, currentTarget + delta * step));
+
+    // Optimistic UI update - update display immediately before server response
+    const tempDisplay = this.shadowRoot?.querySelector('.thermostat-target-temp');
+    if (tempDisplay) {
+      tempDisplay.textContent = `${newTemp}°`;
+    }
 
     if (domain === 'climate') {
       this._hass.callService('climate', 'set_temperature', {
@@ -1144,17 +1160,14 @@ export class AppleHomeCard extends HTMLElement {
       return;
     }
 
-    // For climate, toggle on/off
+    // For climate, toggle on/off - always use 'cool' mode
     if (domain === 'climate') {
       const state = this._hass.states[this.entity];
       if (state?.state === 'off') {
-        // Turn on - use first available HVAC mode that is not 'off'
-        const hvacModes = state.attributes.hvac_modes || [];
-        const availableModes = hvacModes.filter((mode: string) => mode !== 'off');
-        const targetMode = availableModes.length > 0 ? availableModes[0] : 'cool';
+        // Turn on - always use 'cool' mode
         this._hass.callService('climate', 'set_hvac_mode', {
           entity_id: this.entity,
-          hvac_mode: targetMode,
+          hvac_mode: 'cool',
         });
       } else {
         // Turn off
@@ -1171,7 +1184,7 @@ export class AppleHomeCard extends HTMLElement {
       const state = this._hass.states[this.entity];
       const operationList = state?.attributes?.operation_list || [];
       const currentMode = state?.attributes?.operation_mode;
-      
+
       if (currentMode === 'off' || state?.state === 'off') {
         // Turn on - use first available mode that is not 'off'
         const availableModes = operationList.filter((mode: string) => mode !== 'off');
