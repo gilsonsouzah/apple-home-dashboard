@@ -24,12 +24,12 @@ import { localize } from '../utils/LocalizationService';
 
 export enum DeviceGroup {
   LIGHTING = 'lighting',
-  CLIMATE = 'climate', 
+  CLIMATE = 'climate',
   SECURITY = 'security',
   WATER = 'water',
   MEDIA = 'media',
   VACUUM = 'vacuum',
-  OTHER = 'other'
+  OTHER = 'other',
 }
 
 export interface GroupStyle {
@@ -53,7 +53,18 @@ const CLIMATE_MODE_COLORS = {
   heat_cool: '#34c759',
   dry: '#466680',
   fan_only: '#000000',
-  off: '#ffffff'
+  off: '#ffffff',
+};
+
+// Special water heater colors based on operation mode
+const WATER_HEATER_MODE_COLORS = {
+  electric: '#ff8d13',
+  gas: '#ff8d13',
+  heat_pump: '#34c759',
+  eco: '#34c759',
+  high_demand: '#ff5500',
+  performance: '#ff5500',
+  off: '#ffffff',
 };
 
 export class DashboardConfig {
@@ -69,57 +80,58 @@ export class DashboardConfig {
     [DeviceGroup.LIGHTING]: {
       iconColor: '#ffcc06', // Yellow for lights
       icon: 'mdi:lightbulb',
-      name: () => localize('groups.lights')
+      name: () => localize('groups.lights'),
     },
     [DeviceGroup.CLIMATE]: {
       iconColor: '#00c0e8', // Blue for climate/fans/covers
       icon: 'mdi:fan',
-      name: () => localize('groups.climate')
+      name: () => localize('groups.climate'),
     },
     [DeviceGroup.SECURITY]: {
       iconColor: '#00cbbf', // Teal for security devices
       icon: 'mdi:lock',
-      name: () => localize('groups.security')
+      name: () => localize('groups.security'),
     },
     [DeviceGroup.WATER]: {
       iconColor: '#0b78f6', // Dark blue for water devices
       icon: 'mdi:water-outline',
-      name: () => localize('groups.water')
+      name: () => localize('groups.water'),
     },
     [DeviceGroup.MEDIA]: {
       iconColor: '#ffffff', // White for media players
       activeIconColor: '#696969', // Dark grey when active for visibility
       icon: 'mdi:speaker',
-      name: () => localize('groups.media')
+      name: () => localize('groups.media'),
     },
     [DeviceGroup.VACUUM]: {
       iconColor: '#ff9500', // Soft orange for vacuums (Apple Home style)
       icon: 'mdi:robot-vacuum',
-      name: () => localize('groups.vacuum')
+      name: () => localize('groups.vacuum'),
     },
     [DeviceGroup.OTHER]: {
       iconColor: '#ffcc0f', // Yellow for switches/outlets (same as lights)
       icon: 'mdi:light-switch',
-      name: () => localize('groups.other')
-    }
+      name: () => localize('groups.other'),
+    },
   };
 
   /**
    * Domain to device group mapping
    */
   static readonly DOMAIN_TO_GROUP: Record<string, DeviceGroup> = {
-    'light': DeviceGroup.LIGHTING,
-    'switch': DeviceGroup.OTHER, // Outlets and switches
-    'climate': DeviceGroup.CLIMATE,
-    'fan': DeviceGroup.CLIMATE,
-    'cover': DeviceGroup.CLIMATE, // Default - garage doors go to security
-    'lock': DeviceGroup.SECURITY,
-    'alarm_control_panel': DeviceGroup.SECURITY,
-    'media_player': DeviceGroup.MEDIA,
-    'camera': DeviceGroup.SECURITY,
-    'binary_sensor': DeviceGroup.SECURITY, // Motion, occupancy, contact sensors
-    'sensor': DeviceGroup.SECURITY,
-    'vacuum': DeviceGroup.VACUUM // Robot vacuums
+    light: DeviceGroup.LIGHTING,
+    switch: DeviceGroup.OTHER, // Outlets and switches
+    climate: DeviceGroup.CLIMATE,
+    fan: DeviceGroup.CLIMATE,
+    cover: DeviceGroup.CLIMATE, // Default - garage doors go to security
+    lock: DeviceGroup.SECURITY,
+    alarm_control_panel: DeviceGroup.SECURITY,
+    media_player: DeviceGroup.MEDIA,
+    camera: DeviceGroup.SECURITY,
+    binary_sensor: DeviceGroup.SECURITY, // Motion, occupancy, contact sensors
+    sensor: DeviceGroup.SECURITY,
+    vacuum: DeviceGroup.VACUUM, // Robot vacuums
+    water_heater: DeviceGroup.CLIMATE, // Water heaters
   };
 
   // =====================================================================
@@ -130,16 +142,25 @@ export class DashboardConfig {
    * Supported domains for the main dashboard
    */
   static readonly SUPPORTED_DOMAINS = [
-    'light', 'switch', 'cover', 'climate', 'fan', 'media_player', 
-    'lock', 'alarm_control_panel', 'scene', 'script', 'camera', 'vacuum'
+    'light',
+    'switch',
+    'cover',
+    'climate',
+    'fan',
+    'media_player',
+    'lock',
+    'alarm_control_panel',
+    'scene',
+    'script',
+    'camera',
+    'vacuum',
+    'water_heater',
   ] as const;
 
   /**
    * Additional domains used by StatusSection
    */
-  static readonly STATUS_SECTION_DOMAINS = [
-    'sensor', 'binary_sensor'
-  ] as const;
+  static readonly STATUS_SECTION_DOMAINS = ['sensor', 'binary_sensor'] as const;
 
   /**
    * Domains that should appear in scenes section
@@ -154,7 +175,14 @@ export class DashboardConfig {
   /**
    * Domains that should be displayed as tall cards by default
    */
-  static readonly DEFAULT_TALL_DOMAINS = ['climate', 'lock', 'alarm_control_panel', 'camera', 'vacuum'] as const;
+  static readonly DEFAULT_TALL_DOMAINS = [
+    'climate',
+    'lock',
+    'alarm_control_panel',
+    'camera',
+    'vacuum',
+    'water_heater',
+  ] as const;
 
   // =====================================================================
   // STYLING CONSTANTS
@@ -166,13 +194,13 @@ export class DashboardConfig {
     backgroundColor: 'var(--apple-card-bg-inactive, rgba(56, 56, 56, 0.46))',
     iconColor: 'var(--apple-icon-inactive, rgba(142, 142, 147, 0.8))',
     iconBackgroundColor: 'var(--apple-icon-bg-inactive, rgba(0, 0, 0, 0.2))',
-    textColor: 'var(--apple-text-inactive, #ffffff)'
+    textColor: 'var(--apple-text-inactive, #ffffff)',
   };
 
   // Common active styling (same base for all devices)
   private static readonly ACTIVE_BASE_STYLE = {
     backgroundColor: 'var(--apple-card-bg-active, #ffffff)',
-    textColor: 'var(--apple-text-active, #1d1d1f)'
+    textColor: 'var(--apple-text-active, #1d1d1f)',
   };
 
   // =====================================================================
@@ -187,12 +215,12 @@ export class DashboardConfig {
    */
   static isGarageDoorOrGate(entityId: string, attributes: any): boolean {
     const deviceClass = attributes?.device_class?.toLowerCase();
-    return (deviceClass === 'garage' || deviceClass === 'gate');
+    return deviceClass === 'garage' || deviceClass === 'gate';
   }
 
   /**
    * Check if a switch entity is an outlet based on device class
-   * @param entityId The entity ID to check  
+   * @param entityId The entity ID to check
    * @param attributes The entity attributes
    * @returns true if it's an outlet
    */
@@ -209,14 +237,19 @@ export class DashboardConfig {
    * @param showSwitches Whether to show switch entities (default: false)
    * @returns The device group or undefined if entity should be hidden
    */
-  static getDeviceGroup(domain: string, entityId?: string, attributes?: any, showSwitches?: boolean): DeviceGroup | undefined {
+  static getDeviceGroup(
+    domain: string,
+    entityId?: string,
+    attributes?: any,
+    showSwitches?: boolean
+  ): DeviceGroup | undefined {
     // Special handling for covers that might be garage doors or gates
     if (domain === 'cover' && entityId && attributes) {
       if (this.isGarageDoorOrGate(entityId, attributes)) {
         return DeviceGroup.SECURITY;
       }
     }
-    
+
     // Special handling for switches
     if (domain === 'switch' && entityId && attributes) {
       if (this.isOutlet(entityId, attributes)) {
@@ -231,12 +264,12 @@ export class DashboardConfig {
         return undefined; // Hide non-outlet switches when setting is explicitly disabled
       }
     }
-    
+
     // Special handling for sensors based on device_class
     if (domain === 'sensor' && attributes) {
       const deviceClass = attributes.device_class;
       const unitOfMeasurement = attributes.unit_of_measurement;
-      
+
       // Temperature sensors go to Climate
       if (deviceClass === 'temperature' || unitOfMeasurement === '°C' || unitOfMeasurement === '°F') {
         return DeviceGroup.CLIMATE;
@@ -256,19 +289,24 @@ export class DashboardConfig {
       // Default sensors to Security (for things like smoke, gas, etc.)
       return DeviceGroup.SECURITY;
     }
-    
+
     // Special handling for binary_sensors based on device_class
     if (domain === 'binary_sensor' && attributes) {
       const deviceClass = attributes.device_class;
-      
+
       // Motion and occupancy could be considered security or climate-related
       // Keep them in Security for now as they are typically security-related
       if (deviceClass === 'motion' || deviceClass === 'occupancy') {
         return DeviceGroup.SECURITY;
       }
       // Door, window, opening sensors are security
-      if (deviceClass === 'door' || deviceClass === 'window' || deviceClass === 'opening' || 
-          deviceClass === 'garage_door' || deviceClass === 'lock') {
+      if (
+        deviceClass === 'door' ||
+        deviceClass === 'window' ||
+        deviceClass === 'opening' ||
+        deviceClass === 'garage_door' ||
+        deviceClass === 'lock'
+      ) {
         return DeviceGroup.SECURITY;
       }
       // Smoke, gas, carbon monoxide are security
@@ -282,7 +320,7 @@ export class DashboardConfig {
       // Default binary sensors to Security
       return DeviceGroup.SECURITY;
     }
-    
+
     return this.DOMAIN_TO_GROUP[domain];
   }
 
@@ -314,8 +352,7 @@ export class DashboardConfig {
    * @returns true if the domain can be used in status calculations
    */
   static isStatusDomain(domain: string): boolean {
-    return this.SUPPORTED_DOMAINS.includes(domain as any) || 
-           this.STATUS_SECTION_DOMAINS.includes(domain as any);
+    return this.SUPPORTED_DOMAINS.includes(domain as any) || this.STATUS_SECTION_DOMAINS.includes(domain as any);
   }
 
   /**
@@ -365,14 +402,14 @@ export class DashboardConfig {
    */
   private static applyGroupStyling(group: DeviceGroup): Partial<EntityData> {
     const groupStyle = this.getGroupStyle(group);
-    
+
     // Use activeIconColor if defined, otherwise default to white
     const iconColor = groupStyle.activeIconColor || '#ffffff';
-    
+
     return {
       ...this.ACTIVE_BASE_STYLE,
       iconBackgroundColor: groupStyle.iconColor,
-      iconColor
+      iconColor,
     };
   }
 
@@ -385,7 +422,7 @@ export class DashboardConfig {
       const groupStyle = this.getGroupStyle(group);
       return {
         ...this.INACTIVE_STYLE,
-        iconColor: groupStyle.iconColor
+        iconColor: groupStyle.iconColor,
       };
     }
     return this.INACTIVE_STYLE;
@@ -443,6 +480,8 @@ export class DashboardConfig {
         return 'mdi:gesture-tap-button';
       case 'vacuum':
         return entityState === 'cleaning' ? 'mdi:robot-vacuum' : 'mdi:robot-vacuum';
+      case 'water_heater':
+        return 'mdi:water-boiler';
       default:
         return 'mdi:help-circle';
     }
@@ -454,19 +493,44 @@ export class DashboardConfig {
    */
   private static applyClimateStyling(entityState: string, isActive: boolean): Partial<EntityData> {
     const climateColor = (CLIMATE_MODE_COLORS as any)[entityState] || CLIMATE_MODE_COLORS.off;
-    
+
     if (isActive) {
       // Active climate: white icon, colored background (but transparent for climate)
       return {
         ...this.ACTIVE_BASE_STYLE,
         iconBackgroundColor: 'transparent',
-        iconColor: climateColor
+        iconColor: climateColor,
       };
     } else {
       // Inactive climate: colored icon, gray background
       return {
         ...this.INACTIVE_STYLE,
-        iconColor: climateColor
+        iconColor: climateColor,
+      };
+    }
+  }
+
+  /**
+   * Apply special water heater styling based on operation mode
+   * Water heater uses mode-specific colors similar to climate
+   */
+  private static applyWaterHeaterStyling(entityState: string, isActive: boolean): Partial<EntityData> {
+    const waterHeaterColor =
+      (WATER_HEATER_MODE_COLORS as any)[entityState] ||
+      (isActive ? WATER_HEATER_MODE_COLORS.electric : WATER_HEATER_MODE_COLORS.off);
+
+    if (isActive) {
+      // Active water heater: white icon, colored background (but transparent for temperature display)
+      return {
+        ...this.ACTIVE_BASE_STYLE,
+        iconBackgroundColor: 'transparent',
+        iconColor: waterHeaterColor,
+      };
+    } else {
+      // Inactive water heater: colored icon, gray background
+      return {
+        ...this.INACTIVE_STYLE,
+        iconColor: waterHeaterColor,
       };
     }
   }
@@ -476,7 +540,7 @@ export class DashboardConfig {
    */
   private static getMediaPlayerIcon(entityState: string, attributes: any): string {
     const deviceClass = attributes.device_class;
-    
+
     // Use device class for specific icons (no state-based changes)
     switch (deviceClass) {
       case 'tv':
@@ -496,14 +560,19 @@ export class DashboardConfig {
   /**
    * Get entity data with styling and status information
    */
-  static getEntityData(state: EntityState, domain: string, isTall: boolean = false, forceWhiteIcons: boolean = false, hass?: any): EntityData {
-    
+  static getEntityData(
+    state: EntityState,
+    domain: string,
+    isTall: boolean = false,
+    forceWhiteIcons: boolean = false,
+    hass?: any
+  ): EntityData {
     const entityState = state.state;
     const attributes = state.attributes;
-    
+
     // Handle unavailable, unknown, or other problematic states
     const isUnavailableState = ['unavailable', 'unknown', 'none', 'null', ''].includes(entityState.toLowerCase());
-    
+
     // If unavailable, apply off styling and translate the status text
     if (isUnavailableState) {
       return {
@@ -513,7 +582,7 @@ export class DashboardConfig {
         iconBackgroundColor: this.INACTIVE_STYLE.iconBackgroundColor,
         textColor: this.INACTIVE_STYLE.textColor,
         stateText: this.getUnavailableStateText(entityState),
-        icon: attributes.icon || this.getFallbackIcon(domain, entityState, attributes, state.entity_id)
+        icon: attributes.icon || this.getFallbackIcon(domain, entityState, attributes, state.entity_id),
       };
     }
 
@@ -525,7 +594,7 @@ export class DashboardConfig {
     // Get device group and determine if active
     const deviceGroup = this.getDeviceGroup(domain, state.entity_id, attributes);
     const isActive = this.isEntityActive(domain, entityState, attributes);
-    
+
     const icon = attributes.icon || this.getFallbackIcon(domain, entityState, attributes, state.entity_id);
     const stateText = this.getStateText(domain, entityState, attributes, hass);
 
@@ -534,6 +603,9 @@ export class DashboardConfig {
     if (domain === 'climate') {
       // Climate domain uses special mode-based colors
       styling = this.applyClimateStyling(entityState, isActive);
+    } else if (domain === 'water_heater') {
+      // Water heater domain uses special mode-based colors similar to climate
+      styling = this.applyWaterHeaterStyling(entityState, isActive);
     } else if (isActive && deviceGroup) {
       // Use group-based styling for active devices
       styling = this.applyGroupStyling(deviceGroup);
@@ -546,7 +618,7 @@ export class DashboardConfig {
     if (forceWhiteIcons) {
       styling = {
         ...styling,
-        iconColor: '#ffffff'
+        iconColor: '#ffffff',
       };
     }
 
@@ -557,7 +629,7 @@ export class DashboardConfig {
       iconBackgroundColor: styling.iconBackgroundColor || this.INACTIVE_STYLE.iconBackgroundColor,
       textColor: styling.textColor || this.INACTIVE_STYLE.textColor,
       stateText,
-      icon
+      icon,
     };
   }
 
@@ -594,7 +666,7 @@ export class DashboardConfig {
         result = entityState === 'on';
         break;
       case 'sensor':
-         // Sensors are always considered active for status display
+        // Sensors are always considered active for status display
         result = true;
         break;
       case 'input_boolean':
@@ -609,10 +681,14 @@ export class DashboardConfig {
         // Vacuum is active when cleaning, returning, or any state other than docked/idle/off
         result = ['cleaning', 'returning', 'paused'].includes(entityState);
         break;
+      case 'water_heater':
+        // Water heater is active when not off
+        result = entityState !== 'off';
+        break;
       default:
         result = ['on', 'active', 'enabled', 'open', 'unlocked'].includes(entityState.toLowerCase());
     }
-    
+
     return result;
   }
 
@@ -679,6 +755,9 @@ export class DashboardConfig {
 
       case 'vacuum':
         return this.getVacuumStateText(entityState, attributes);
+
+      case 'water_heater':
+        return this.getWaterHeaterStateText(entityState, attributes, hass);
 
       default:
         return entityState === 'on' ? localize('status.on') : localize('status.off');
@@ -768,6 +847,38 @@ export class DashboardConfig {
   }
 
   /**
+   * Get water heater-specific state text
+   */
+  private static getWaterHeaterStateText(entityState: string, attributes: any, hass?: any): string {
+    const targetTemp = attributes.temperature;
+    const currentTemp = attributes.current_temperature;
+    // Get temperature unit from entity attributes, or from Home Assistant config, or fallback to °C
+    const tempUnit = attributes.unit_of_measurement || hass?.config?.unit_system?.temperature || '°C';
+
+    switch (entityState) {
+      case 'electric':
+      case 'gas':
+      case 'heat_pump':
+      case 'eco':
+      case 'high_demand':
+      case 'performance':
+        // For active modes, show target temperature if available
+        if (targetTemp) {
+          return `${localize('status.heat_to')} ${targetTemp}${tempUnit}`;
+        }
+        return localize('status.on');
+      case 'off':
+        return localize('status.off');
+      default:
+        // For any other state, try to show target temp if available
+        if (targetTemp && entityState !== 'off') {
+          return `${localize('status.heat_to')} ${targetTemp}${tempUnit}`;
+        }
+        return entityState === 'off' ? localize('status.off') : localize('status.on');
+    }
+  }
+
+  /**
    * Get lock-specific state text
    */
   private static getLockStateText(entityState: string): string {
@@ -819,7 +930,7 @@ export class DashboardConfig {
   private static getBinarySensorStateText(entityState: string, attributes: any): string {
     const deviceClass = attributes.device_class;
     const friendlyName = attributes.friendly_name;
-    
+
     if (entityState === 'on') {
       switch (deviceClass) {
         case 'motion':
@@ -907,12 +1018,12 @@ export class DashboardConfig {
   private static getSensorStateText(entityState: string, attributes: any): string {
     const deviceClass = attributes.device_class;
     const unitOfMeasurement = attributes.unit_of_measurement;
-    
+
     // If it has a unit of measurement, show the value with unit
     if (unitOfMeasurement && entityState !== 'unavailable' && entityState !== 'unknown') {
       return `${entityState} ${unitOfMeasurement}`;
     }
-    
+
     // Handle special device classes
     switch (deviceClass) {
       case 'battery':
@@ -950,7 +1061,12 @@ export class DashboardConfig {
   /**
    * Handle unsupported domains (fallback behavior)
    */
-  private static handleUnsupportedDomain(entityState: string, attributes: any, domain: string, entityId?: string): EntityData {
+  private static handleUnsupportedDomain(
+    entityState: string,
+    attributes: any,
+    domain: string,
+    entityId?: string
+  ): EntityData {
     const isActive = ['on', 'active', 'enabled', 'open', 'unlocked'].includes(entityState.toLowerCase());
     const stateText = isActive ? localize('status.on') : localize('status.off');
     const icon = attributes.icon || this.getFallbackIcon(domain, entityState, attributes, entityId);
@@ -962,11 +1078,9 @@ export class DashboardConfig {
       iconColor: isActive ? '#ffffff' : this.INACTIVE_STYLE.iconColor,
       textColor: isActive ? this.ACTIVE_BASE_STYLE.textColor : this.INACTIVE_STYLE.textColor,
       stateText,
-      icon
+      icon,
     };
   }
-
-
 
   // Default Apple-style gradient background (beautiful sunrise/sunset theme)
   private static readonly DEFAULT_BACKGROUND = `
@@ -980,5 +1094,4 @@ export class DashboardConfig {
   static getDefaultBackground() {
     return this.DEFAULT_BACKGROUND;
   }
-
 }

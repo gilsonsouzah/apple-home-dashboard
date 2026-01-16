@@ -265,8 +265,14 @@ export class SnapshotManager {
       const separator = imageUrl.includes('?') ? '&' : '?';
       const timestampedUrl = `${imageUrl}${separator}_t=${Date.now()}`;
       
-      // Convert to base64
-      const response = await fetch(timestampedUrl);
+      // Convert to base64 using authenticated fetch
+      // Home Assistant requires authentication for camera images
+      const response = await fetch(timestampedUrl, {
+        credentials: 'same-origin',
+        headers: {
+          'Authorization': `Bearer ${this.hass.auth?.data?.access_token || ''}`,
+        }
+      });
       if (!response.ok) {
         throw new Error(`Failed to fetch image: ${response.status}`);
       }
