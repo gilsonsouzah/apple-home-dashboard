@@ -407,12 +407,12 @@ export class GroupPage {
         }
       }
     } else {
-      // Default order: cameras, scenes, then areas alphabetically
+      // Default order: scenes, cameras, then areas alphabetically
       orderedSectionIds = Array.from(availableSections.keys()).sort((a, b) => {
-        if (a === 'cameras_section') return -1;
-        if (b === 'cameras_section') return 1;
         if (a === 'scenes_section') return -1;
         if (b === 'scenes_section') return 1;
+        if (a === 'cameras_section') return -1;
+        if (b === 'cameras_section') return 1;
         return a.localeCompare(b);
       });
     }

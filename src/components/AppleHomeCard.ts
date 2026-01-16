@@ -238,13 +238,13 @@ export class AppleHomeCard extends HTMLElement {
       const isActive = state.state !== 'off';
       const targetTemp = state.attributes.temperature;
       // For water_heater, always show target temp (even when off - shows last set value)
-      const displayTemp = targetTemp !== undefined && targetTemp !== null 
-        ? `${targetTemp}°` 
-        : tempText;
+      const displayTemp = targetTemp !== undefined && targetTemp !== null ? `${targetTemp}°` : tempText;
       iconElement = `
         <div class="thermostat-top-row ${isActive ? 'water-heater-active' : 'water-heater-inactive'}">
           <div class="thermostat-target-temp" dir="ltr">${displayTemp}</div>
-          ${isActive && targetTemp !== undefined ? `
+          ${
+            isActive && targetTemp !== undefined
+              ? `
           <div class="thermostat-controls">
             <button class="chevron-btn chevron-up" aria-label="Increase temperature">
               <ha-icon icon="mdi:chevron-up"></ha-icon>
@@ -253,7 +253,9 @@ export class AppleHomeCard extends HTMLElement {
               <ha-icon icon="mdi:chevron-down"></ha-icon>
             </button>
           </div>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
       `;
     } else if (this.domain === 'camera' && this.cameraView === 'snapshot') {
@@ -1290,6 +1292,18 @@ export class AppleHomeCard extends HTMLElement {
       } else {
         this._hass.callService('lock', 'lock', { entity_id: this.entity });
       }
+      return;
+    }
+
+    // For scenes, activate on card click
+    if (domain === 'scene') {
+      this._hass.callService('scene', 'turn_on', { entity_id: this.entity });
+      return;
+    }
+
+    // For scripts, run on card click
+    if (domain === 'script') {
+      this._hass.callService('script', 'turn_on', { entity_id: this.entity });
       return;
     }
 
