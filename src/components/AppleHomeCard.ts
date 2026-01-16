@@ -198,16 +198,22 @@ export class AppleHomeCard extends HTMLElement {
       const isActive = state.state !== 'off';
       const targetTemp = state.attributes.temperature;
       // For modes like 'dry' or 'fan_only' that don't have target temp, show current temp
-      const displayTemp = targetTemp !== undefined && targetTemp !== null 
-        ? `${targetTemp}°` 
-        : (state.attributes.current_temperature !== undefined ? `${state.attributes.current_temperature.toFixed(0)}°` : '--°');
+      const displayTemp =
+        targetTemp !== undefined && targetTemp !== null
+          ? `${targetTemp}°`
+          : state.attributes.current_temperature !== undefined
+            ? `${state.attributes.current_temperature.toFixed(0)}°`
+            : '--°';
       const hasTargetTemp = targetTemp !== undefined && targetTemp !== null;
       iconElement = `
-        ${isActive
-          ? `
+        ${
+          isActive
+            ? `
         <div class="thermostat-top-row climate-active">
           <div class="thermostat-target-temp" dir="ltr">${displayTemp}</div>
-          ${hasTargetTemp ? `
+          ${
+            hasTargetTemp
+              ? `
           <div class="thermostat-controls">
             <button class="chevron-btn chevron-up" aria-label="Increase temperature">
               <ha-icon icon="mdi:chevron-up"></ha-icon>
@@ -216,10 +222,12 @@ export class AppleHomeCard extends HTMLElement {
               <ha-icon icon="mdi:chevron-down"></ha-icon>
             </button>
           </div>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
         `
-          : `
+            : `
         <div class="info-icon temperature-display">
           <span class="temperature-text" dir="ltr">${tempText}</span>
         </div>
@@ -255,7 +263,6 @@ export class AppleHomeCard extends HTMLElement {
     } else if (this.domain === 'camera' && this.cameraView === 'snapshot') {
       const state = this._hass.states[this.entity!];
       const cameraState = state?.state;
-      const entityPicture = state?.attributes?.entity_picture;
 
       // Check if camera entity is unavailable
       if (!cameraState || cameraState === 'unavailable' || cameraState === 'unknown' || cameraState === 'off') {
@@ -265,21 +272,16 @@ export class AppleHomeCard extends HTMLElement {
             <ha-icon icon="mdi:camera-off"></ha-icon>
           </div>
         `;
-      } else if (entityPicture) {
-        // Camera available with entity_picture - use direct image
+      } else {
+        // Camera available - use ha-camera-stream component
         iconElement = `
-          <div class="camera-container">
-            <img class="camera-stream-img" src="${entityPicture}" alt="Camera" />
+          <div class="camera-container" id="camera-container-${this.entity!.replace(/\./g, '-')}">
+            <div class="camera-loading">
+              <ha-icon icon="mdi:camera"></ha-icon>
+            </div>
             <div class="camera-overlay">
               <span class="camera-live-indicator">LIVE</span>
             </div>
-          </div>
-        `;
-      } else {
-        // Camera available but no entity_picture
-        iconElement = `
-          <div class="camera-icon-no-snapshot">
-            <ha-icon icon="mdi:camera"></ha-icon>
           </div>
         `;
       }
@@ -363,13 +365,89 @@ export class AppleHomeCard extends HTMLElement {
       this.setupClickHandlers();
     }
 
-    // Camera cards now use direct entity_picture - no complex initialization needed
-    // The image will auto-refresh when entity state changes
+    // Initialize camera with signed URL if this is a camera card
+    if (this.domain === 'camera' && this.cameraView === 'snapshot' && !isEditMode) {
+      this.initializeCameraWithSignedUrl();
+    }
   }
 
-  // Legacy camera methods kept for compatibility but simplified
-  private initializeCamera(cameraContainer: HTMLElement, isEditMode: boolean): void {
-    // No longer needed - using direct entity_picture
+  // Initialize camera using signed URL from HA API
+  private async initializeCameraWithSignedUrl(): Promise<void> {
+    if (!this._hass || !this.entity) return;
+
+    const state = this._hass.states[this.entity];
+    if (!state || state.state === 'unavailable' || state.state === 'unknown' || state.state === 'off') {
+      return;
+    }
+
+    try {
+      // Use HA's signPath API to get a signed URL for the camera
+      const result = await this._hass.callWS({
+        type: 'auth/sign_path',
+        path: `/api/camera_proxy/${this.entity}`,
+        expires: 300, // 5 minutes
+      });
+
+      if (result && result.path) {
+        const signedUrl = result.path;
+        const container = this.shadowRoot?.querySelector('.camera-container');
+        if (container) {
+          // Remove loading icon
+          const loading = container.querySelector('.camera-loading');
+          if (loading) {
+            loading.remove();
+          }
+
+          // Create image element with signed URL
+          const img = document.createElement('img');
+          img.className = 'camera-stream-img';
+          img.src = signedUrl;
+          img.alt = 'Camera';
+          img.onerror = () => {
+            // On error, show camera icon
+            img.style.display = 'none';
+            const fallback = document.createElement('div');
+            fallback.className = 'camera-icon-no-snapshot';
+            fallback.innerHTML = '<ha-icon icon="mdi:camera-off"></ha-icon>';
+            container.insertBefore(fallback, container.firstChild);
+          };
+
+          container.insertBefore(img, container.firstChild);
+
+          // Refresh the signed URL periodically (every 4 minutes)
+          if (this.queryTimer) {
+            clearInterval(this.queryTimer);
+          }
+          this.queryTimer = window.setInterval(() => {
+            this.refreshCameraSignedUrl();
+          }, 240000); // 4 minutes
+        }
+      }
+    } catch (error) {
+      console.error('Error getting signed camera URL:', error);
+    }
+  }
+
+  // Refresh the signed URL for camera
+  private async refreshCameraSignedUrl(): Promise<void> {
+    if (!this._hass || !this.entity) return;
+
+    try {
+      const result = await this._hass.callWS({
+        type: 'auth/sign_path',
+        path: `/api/camera_proxy/${this.entity}`,
+        expires: 300,
+      });
+
+      if (result && result.path) {
+        const img = this.shadowRoot?.querySelector('.camera-stream-img') as HTMLImageElement;
+        if (img) {
+          img.src = result.path;
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing signed camera URL:', error);
+    }
   }
 
   private queryAndUpdateSnapshot(): void {
@@ -1368,11 +1446,8 @@ export class AppleHomeCard extends HTMLElement {
       // Clean up existing setup
       this.cleanupCamera();
 
-      // Reinitialize with global camera manager
-      const cameraContainer = this.shadowRoot?.querySelector('.camera-container') as HTMLElement;
-      if (cameraContainer) {
-        this.initializeCamera(cameraContainer, false);
-      }
+      // Reinitialize camera with signed URL
+      this.initializeCameraWithSignedUrl();
     }
   }
 }
