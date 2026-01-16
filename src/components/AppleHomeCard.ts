@@ -45,31 +45,7 @@ export class AppleHomeCard extends HTMLElement {
       }, 10);
     }
 
-    // If this is a camera card being reattached (has snapshotManager but no images/timer),
-    // we need to reinitialize the display since render() won't be called
-    if (
-      this.domain === 'camera' &&
-      this.cameraView === 'snapshot' &&
-      this.snapshotManager &&
-      this.cameraImages.length === 0 &&
-      !this.queryTimer
-    ) {
-      // Use setTimeout to ensure shadowRoot content is ready
-      setTimeout(() => {
-        const cameraContainer = this.shadowRoot?.querySelector('.camera-container') as HTMLElement;
-        if (cameraContainer && this.cameraImages.length === 0) {
-          this.setupCameraImages(cameraContainer);
-          this.lastDisplayedTimestamp = undefined; // Force showing current snapshot
-          this.queryAndUpdateSnapshot();
-
-          if (!this.queryTimer) {
-            this.queryTimer = window.setInterval(() => {
-              this.queryAndUpdateSnapshot();
-            }, 1000);
-          }
-        }
-      }, 50);
-    }
+    // Camera cards now use direct entity_picture - no reinitialization needed
   }
 
   disconnectedCallback() {
@@ -238,29 +214,34 @@ export class AppleHomeCard extends HTMLElement {
     } else if (this.domain === 'water_heater') {
       const isActive = state.state !== 'off';
       const targetTemp = state.attributes.temperature;
+      const currentTemp = state.attributes.current_temperature;
       iconElement = `
-        <div class="info-icon temperature-display water-heater-display">
-          <span class="temperature-text" dir="ltr">${tempText}</span>
-        </div>
         ${
           isActive && targetTemp !== undefined
             ? `
-        <div class="temp-controls">
-          <button class="temp-btn temp-down" aria-label="Decrease temperature">
-            <ha-icon icon="mdi:minus"></ha-icon>
-          </button>
-          <span class="target-temp" dir="ltr">${targetTemp}°</span>
-          <button class="temp-btn temp-up" aria-label="Increase temperature">
-            <ha-icon icon="mdi:plus"></ha-icon>
-          </button>
+        <div class="water-heater-top-row">
+          <div class="water-heater-target-temp" dir="ltr">${targetTemp}°</div>
+          <div class="water-heater-controls">
+            <button class="temp-btn temp-down" aria-label="Decrease temperature">
+              <ha-icon icon="mdi:minus"></ha-icon>
+            </button>
+            <button class="temp-btn temp-up" aria-label="Increase temperature">
+              <ha-icon icon="mdi:plus"></ha-icon>
+            </button>
+          </div>
         </div>
         `
-            : ''
+            : `
+        <div class="info-icon temperature-display water-heater-display">
+          <span class="temperature-text" dir="ltr">${tempText}</span>
+        </div>
+        `
         }
       `;
     } else if (this.domain === 'camera' && this.cameraView === 'snapshot') {
       const state = this._hass.states[this.entity!];
       const cameraState = state?.state;
+      const entityPicture = state?.attributes?.entity_picture;
 
       // Check if camera entity is unavailable
       if (!cameraState || cameraState === 'unavailable' || cameraState === 'unknown' || cameraState === 'off') {
@@ -270,20 +251,21 @@ export class AppleHomeCard extends HTMLElement {
             <ha-icon icon="mdi:camera-off"></ha-icon>
           </div>
         `;
-      } else if (this.cameraSnapshotFailed) {
-        // Camera available but snapshot failed - show camera icon
+      } else if (entityPicture) {
+        // Camera available with entity_picture - use direct image
         iconElement = `
-          <div class="camera-icon-no-snapshot">
-            <ha-icon icon="mdi:camera"></ha-icon>
+          <div class="camera-container">
+            <img class="camera-stream-img" src="${entityPicture}" alt="Camera" />
+            <div class="camera-overlay">
+              <span class="camera-live-indicator">LIVE</span>
+            </div>
           </div>
         `;
       } else {
-        // Camera available and should have snapshot - show container
+        // Camera available but no entity_picture
         iconElement = `
-          <div class="camera-container">
-            <div class="camera-overlay">
-              <span class="camera-timestamp" id="camera-timestamp-${this.entity?.replace(/\./g, '-')}"></span>
-            </div>
+          <div class="camera-icon-no-snapshot">
+            <ha-icon icon="mdi:camera"></ha-icon>
           </div>
         `;
       }
@@ -324,8 +306,9 @@ export class AppleHomeCard extends HTMLElement {
               ? (() => {
                   const state = this._hass.states[this.entity!];
                   const cameraState = state?.state;
+                  const entityPicture = state?.attributes?.entity_picture;
 
-                  // Show text content for unavailable cameras or snapshot failures
+                  // Show text content for unavailable cameras
                   if (
                     !cameraState ||
                     cameraState === 'unavailable' ||
@@ -338,7 +321,7 @@ export class AppleHomeCard extends HTMLElement {
                   <div class="entity-state camera-status">${localize('status_messages.unavailable')}</div>
                 </div>
               `;
-                  } else if (this.cameraSnapshotFailed) {
+                  } else if (!entityPicture) {
                     return `
                 <div class="text-content camera-text">
                   <div class="entity-name">${name}</div>
@@ -366,71 +349,13 @@ export class AppleHomeCard extends HTMLElement {
       this.setupClickHandlers();
     }
 
-    // Initialize camera if this is a camera card AND camera is available
-    if (this.domain === 'camera' && this.cameraView === 'snapshot' && this._hass && this.entity) {
-      const state = this._hass.states[this.entity];
-      const cameraState = state?.state;
-
-      // Only clean up snapshot manager if camera is truly unavailable
-      if (
-        this.snapshotManager &&
-        cameraState &&
-        (cameraState === 'unavailable' || cameraState === 'unknown' || cameraState === 'off')
-      ) {
-        this.cleanupCamera();
-        this.cameraSnapshotFailed = false;
-      }
-
-      // Initialize camera display if camera is available
-      if (cameraState && cameraState !== 'unavailable' && cameraState !== 'unknown' && cameraState !== 'off') {
-        setTimeout(() => {
-          const cameraContainer = this.shadowRoot?.querySelector('.camera-container') as HTMLElement;
-          if (cameraContainer && this.cameraImages.length === 0) {
-            // Get or create snapshot manager
-            if (!this.snapshotManager) {
-              this.snapshotManager = SnapshotManager.getInstance();
-              this.snapshotManager.setHass(this._hass);
-              this.snapshotManager.registerCamera(this.entity!);
-            }
-
-            // Setup camera images in the container
-            this.setupCameraImages(cameraContainer);
-
-            // Immediately check for existing snapshot and display it
-            this.queryAndUpdateSnapshot();
-
-            // Start query timer to check for new snapshots every second
-            if (!this.queryTimer) {
-              this.queryTimer = window.setInterval(() => {
-                this.queryAndUpdateSnapshot();
-              }, 1000);
-            }
-          }
-        }, 100);
-      }
-    }
+    // Camera cards now use direct entity_picture - no complex initialization needed
+    // The image will auto-refresh when entity state changes
   }
 
+  // Legacy camera methods kept for compatibility but simplified
   private initializeCamera(cameraContainer: HTMLElement, isEditMode: boolean): void {
-    // Get snapshot manager (or reuse existing one)
-    if (!this.snapshotManager) {
-      this.snapshotManager = SnapshotManager.getInstance();
-      this.snapshotManager.setHass(this._hass);
-    }
-
-    // Setup camera images in the container
-    this.setupCameraImages(cameraContainer);
-
-    // Register camera with snapshot manager (will reuse existing registration if it exists)
-    this.snapshotManager.registerCamera(this.entity!);
-
-    // Immediately check for existing snapshot and display it
-    this.queryAndUpdateSnapshot();
-
-    // Start query timer to check for new snapshots every second
-    this.queryTimer = window.setInterval(() => {
-      this.queryAndUpdateSnapshot();
-    }, 1000);
+    // No longer needed - using direct entity_picture
   }
 
   private queryAndUpdateSnapshot(): void {
@@ -857,6 +782,39 @@ export class AppleHomeCard extends HTMLElement {
         padding: 8px 0;
       }
 
+      /* Water heater top row layout */
+      .water-heater-top-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        width: 100%;
+      }
+
+      .water-heater-target-temp {
+        font-size: var(--apple-temp-font-size-tall, 38px);
+        font-weight: 700;
+        color: ${entityData.iconColor};
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+        letter-spacing: -0.5px;
+        line-height: 1;
+      }
+
+      .water-heater-controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      /* Hide water heater top row on regular (small) cards */
+      :host(.regular-design) .water-heater-top-row {
+        display: none;
+      }
+
+      /* Show simple temperature for regular design water heater */
+      :host(.regular-design) .water-heater-display {
+        display: flex;
+      }
+
       .temp-btn {
         width: 36px;
         height: 36px;
@@ -992,6 +950,22 @@ export class AppleHomeCard extends HTMLElement {
         -webkit-touch-callout: none;
       }
 
+      /* Direct camera stream image */
+      .camera-stream-img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: inherit;
+        border: none;
+        outline: none;
+        -webkit-user-drag: none;
+        user-select: none;
+        pointer-events: none;
+      }
+
       .camera-fallback {
         display: none;
       }
@@ -1005,6 +979,18 @@ export class AppleHomeCard extends HTMLElement {
         justify-content: center;
         color: white;
         z-index: 10;
+      }
+
+      .camera-live-indicator {
+        font-size: 10px;
+        font-weight: 700;
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+        color: white;
+        background: rgba(255, 59, 48, 0.9);
+        padding: 2px 6px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
       }
 
       .camera-timestamp {
@@ -1172,11 +1158,13 @@ export class AppleHomeCard extends HTMLElement {
     if (domain === 'climate') {
       const state = this._hass.states[this.entity];
       if (state?.state === 'off') {
-        // Turn on - use last known mode or 'heat' as fallback
-        const lastMode = state.attributes.last_mode || 'heat';
+        // Turn on - use first available HVAC mode that is not 'off'
+        const hvacModes = state.attributes.hvac_modes || [];
+        const availableModes = hvacModes.filter((mode: string) => mode !== 'off');
+        const targetMode = availableModes.length > 0 ? availableModes[0] : 'cool';
         this._hass.callService('climate', 'set_hvac_mode', {
           entity_id: this.entity,
-          hvac_mode: lastMode,
+          hvac_mode: targetMode,
         });
       } else {
         // Turn off

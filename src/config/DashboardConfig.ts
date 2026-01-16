@@ -850,7 +850,6 @@ export class DashboardConfig {
    * Get water heater-specific state text
    */
   private static getWaterHeaterStateText(entityState: string, attributes: any, hass?: any): string {
-    const targetTemp = attributes.temperature;
     const currentTemp = attributes.current_temperature;
     // Get temperature unit from entity attributes, or from Home Assistant config, or fallback to °C
     const tempUnit = attributes.unit_of_measurement || hass?.config?.unit_system?.temperature || '°C';
@@ -862,17 +861,17 @@ export class DashboardConfig {
       case 'eco':
       case 'high_demand':
       case 'performance':
-        // For active modes, show target temperature if available
-        if (targetTemp) {
-          return `${localize('status.heat_to')} ${targetTemp}${tempUnit}`;
+        // For active modes, show current temperature
+        if (currentTemp !== undefined) {
+          return `${localize('status.current')}: ${currentTemp}${tempUnit}`;
         }
         return localize('status.on');
       case 'off':
         return localize('status.off');
       default:
-        // For any other state, try to show target temp if available
-        if (targetTemp && entityState !== 'off') {
-          return `${localize('status.heat_to')} ${targetTemp}${tempUnit}`;
+        // For any other state, try to show current temp if available
+        if (currentTemp !== undefined && entityState !== 'off') {
+          return `${localize('status.current')}: ${currentTemp}${tempUnit}`;
         }
         return entityState === 'off' ? localize('status.off') : localize('status.on');
     }

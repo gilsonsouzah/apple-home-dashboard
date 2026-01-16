@@ -11,7 +11,7 @@
     "unavailable": "Desligado",
     "idle": "Desligado",
     "heating": "Aquecer para",
-    "cooling": "Resfriar para", 
+    "cooling": "Resfriar para",
     "auto": "Auto",
     "heat_cool": "Auto",
     "heat": "Aquecer para",
@@ -51,7 +51,8 @@
     "error": "Erro",
     "heat_to": "Aquecer para",
     "cool_to": "Resfriar para",
-    "none": "Nenhum"
+    "none": "Nenhum",
+    "current": "Atual"
   },
   "units": {
     "percent": "%",
