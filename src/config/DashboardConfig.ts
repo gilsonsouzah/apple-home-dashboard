@@ -768,31 +768,16 @@ export class DashboardConfig {
    * Get climate-specific state text
    */
   private static getClimateStateText(entityState: string, attributes: any, hass?: any): string {
-    const targetTemp = attributes.temperature;
-    const targetTempHigh = attributes.target_temp_high;
-    const targetTempLow = attributes.target_temp_low;
+    const currentTemp = attributes.current_temperature;
     // Get temperature unit from entity attributes, or from Home Assistant config, or fallback to °C
     const tempUnit = attributes.unit_of_measurement || hass?.config?.unit_system?.temperature || '°C';
 
+    // When active, show current temperature
+    if (entityState !== 'off' && currentTemp !== undefined && currentTemp !== null) {
+      return `${localize('status.current')}: ${currentTemp}${tempUnit}`;
+    }
+
     switch (entityState) {
-      case 'heat':
-      case 'heating':
-        return targetTemp ? `${localize('status.heat_to')} ${targetTemp}${tempUnit}` : localize('status.heat_to');
-      case 'cool':
-      case 'cooling':
-        return targetTemp ? `${localize('status.cool_to')} ${targetTemp}${tempUnit}` : localize('status.cool_to');
-      case 'auto':
-      case 'heat_cool':
-        if (targetTempLow && targetTempHigh) {
-          return `${localize('status.auto')} ${targetTempLow}-${targetTempHigh}${tempUnit}`;
-        } else if (targetTemp) {
-          return `${localize('status.auto')} ${targetTemp}${tempUnit}`;
-        }
-        return localize('status.auto');
-      case 'dry':
-        return localize('status.dry');
-      case 'fan_only':
-        return localize('status.fan_only');
       case 'off':
         return localize('status.off');
       default:
