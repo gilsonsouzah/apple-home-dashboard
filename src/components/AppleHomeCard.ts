@@ -1281,6 +1281,17 @@ export class AppleHomeCard extends HTMLElement {
       return;
     }
 
+    // For locks, toggle lock/unlock on card click
+    if (domain === 'lock') {
+      const state = this._hass.states[this.entity];
+      if (state?.state === 'locked') {
+        this._hass.callService('lock', 'unlock', { entity_id: this.entity });
+      } else {
+        this._hass.callService('lock', 'lock', { entity_id: this.entity });
+      }
+      return;
+    }
+
     // Open more-info dialog for other domains
     this.dispatchEvent(
       new CustomEvent('hass-more-info', {
