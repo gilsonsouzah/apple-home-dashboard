@@ -878,7 +878,7 @@ export class DashboardConfig {
       case 'jammed':
         return localize('status.jammed');
       default:
-        return localize('status.locked');
+        return localize('status.off');
     }
   }
 
