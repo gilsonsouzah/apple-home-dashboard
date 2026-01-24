@@ -871,10 +871,14 @@ export class DashboardConfig {
         return localize('status.locked');
       case 'unlocked':
         return localize('status.unlocked');
+      case 'locking':
+        return localize('status.locking');
+      case 'unlocking':
+        return localize('status.unlocking');
       case 'jammed':
         return localize('status.jammed');
       default:
-        return localize('status.off');
+        return localize('status.locked');
     }
   }
 
