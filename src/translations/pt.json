@@ -6,6 +6,8 @@
     "closed": "Fechado",
     "locked": "Trancado",
     "unlocked": "Destrancado",
+    "locking": "Trancando",
+    "unlocking": "Destrancando",
     "jammed": "Travado",
     "unknown": "Desligado",
     "unavailable": "Desligado",

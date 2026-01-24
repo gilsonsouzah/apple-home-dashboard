@@ -1287,7 +1287,13 @@ export class AppleHomeCard extends HTMLElement {
     // For locks, toggle lock/unlock on card click
     if (domain === 'lock') {
       const state = this._hass.states[this.entity];
-      if (state?.state === 'locked') {
+      const lockState = state?.state;
+      // Ignore if in transitional state (locking/unlocking)
+      if (lockState === 'locking' || lockState === 'unlocking') {
+        return;
+      }
+      // Toggle based on current state - if locked, unlock; otherwise lock
+      if (lockState === 'locked') {
         this._hass.callService('lock', 'unlock', { entity_id: this.entity });
       } else {
         this._hass.callService('lock', 'lock', { entity_id: this.entity });
@@ -1343,6 +1349,11 @@ export class AppleHomeCard extends HTMLElement {
         break;
       case 'lock':
         const lockState = this._hass.states[entityId]?.state;
+        // Ignore if in transitional state (locking/unlocking)
+        if (lockState === 'locking' || lockState === 'unlocking') {
+          break;
+        }
+        // Toggle based on current state - if locked, unlock; otherwise lock
         if (lockState === 'locked') {
           this._hass.callService('lock', 'unlock', { entity_id: entityId });
         } else {
