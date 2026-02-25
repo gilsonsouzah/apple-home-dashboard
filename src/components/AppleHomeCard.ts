@@ -1300,11 +1300,8 @@ export class AppleHomeCard extends HTMLElement {
         return;
       }
       // Toggle based on current state - if locked, unlock; otherwise lock
-      if (lockState === 'locked') {
-        this._hass.callService('lock', 'unlock', { entity_id: this.entity });
-      } else {
-        this._hass.callService('lock', 'lock', { entity_id: this.entity });
-      }
+      // Use try/catch to handle locks that require code but don't have code_format
+      this.tryLockAction(this.entity, action);
       return;
     }
 
@@ -1369,11 +1366,8 @@ export class AppleHomeCard extends HTMLElement {
           break;
         }
         // Toggle based on current state - if locked, unlock; otherwise lock
-        if (lockState === 'locked') {
-          this._hass.callService('lock', 'unlock', { entity_id: entityId });
-        } else {
-          this._hass.callService('lock', 'lock', { entity_id: entityId });
-        }
+        // Use try/catch to handle locks that require code but don't have code_format
+        this.tryLockAction(entityId, lockAction);
         break;
       case 'climate':
         // For climate, icon click opens more-info (since it's just showing temperature)
@@ -1718,5 +1712,26 @@ export class AppleHomeCard extends HTMLElement {
       if (e.key === 'Enter') handleConfirm();
       if (e.key === 'Escape') closeModal();
     });
+  }
+
+  private async tryLockAction(entityId: string, action: 'lock' | 'unlock') {
+    try {
+      await this._hass?.callService('lock', action, { entity_id: entityId });
+    } catch (err: any) {
+      // If error indicates code is required, show modal
+      const errorStr = String(err?.message || err || '').toLowerCase();
+      if (
+        errorStr.includes('code') ||
+        errorStr.includes('bytes') ||
+        errorStr.includes('validation') ||
+        errorStr.includes('mismatch')
+      ) {
+        // Show modal with default numeric code format
+        this.showLockCodeModal(entityId, action, '^\\d+$');
+      } else {
+        // Re-throw other errors
+        console.error('Lock action failed:', err);
+      }
+    }
   }
 }
