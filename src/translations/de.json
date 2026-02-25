@@ -248,5 +248,14 @@
   "status_messages": {
     "unavailable": "Nicht verfügbar",
     "loading_automations": "Automatisierungen werden geladen..."
+  },
+  "lock_modal": {
+    "lock": "Sperren",
+    "unlock": "Entsperren",
+    "enter_code": "Code eingeben",
+    "cancel": "Abbrechen",
+    "code_required": "Bitte geben Sie einen Code ein",
+    "invalid_code": "Ungültiges Codeformat",
+    "error": "Aktion fehlgeschlagen"
   }
 }

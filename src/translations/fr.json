@@ -248,5 +248,14 @@
   "status_messages": {
     "unavailable": "Indisponible",
     "loading_automations": "Chargement des Automatisations..."
+  },
+  "lock_modal": {
+    "lock": "Verrouiller",
+    "unlock": "Déverrouiller",
+    "enter_code": "Entrez le code",
+    "cancel": "Annuler",
+    "code_required": "Veuillez entrer un code",
+    "invalid_code": "Format de code invalide",
+    "error": "Échec de l'action"
   }
 }

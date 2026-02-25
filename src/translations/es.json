@@ -249,5 +249,14 @@
   "status_messages": {
     "unavailable": "No disponible",
     "loading_automations": "Cargando Automatizaciones..."
+  },
+  "lock_modal": {
+    "lock": "Bloquear",
+    "unlock": "Desbloquear",
+    "enter_code": "Ingrese el código",
+    "cancel": "Cancelar",
+    "code_required": "Por favor, ingrese el código",
+    "invalid_code": "Formato de código inválido",
+    "error": "Error al ejecutar la acción"
   }
 }

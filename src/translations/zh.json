@@ -248,5 +248,14 @@
   "status_messages": {
     "unavailable": "不可用",
     "loading_automations": "正在加载自动化..."
+  },
+  "lock_modal": {
+    "lock": "锁定",
+    "unlock": "解锁",
+    "enter_code": "输入密码",
+    "cancel": "取消",
+    "code_required": "请输入密码",
+    "invalid_code": "密码格式无效",
+    "error": "操作失败"
   }
 }

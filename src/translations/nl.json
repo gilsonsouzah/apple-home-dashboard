@@ -248,5 +248,14 @@
   "status_messages": {
     "unavailable": "Niet beschikbaar",
     "loading_automations": "Automatiseringen Laden..."
+  },
+  "lock_modal": {
+    "lock": "Vergrendelen",
+    "unlock": "Ontgrendelen",
+    "enter_code": "Voer code in",
+    "cancel": "Annuleren",
+    "code_required": "Voer een code in",
+    "invalid_code": "Ongeldig codeformaat",
+    "error": "Actie mislukt"
   }
 }

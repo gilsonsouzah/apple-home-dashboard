@@ -1292,15 +1292,11 @@ export class AppleHomeCard extends HTMLElement {
       if (lockState === 'locking' || lockState === 'unlocking') {
         return;
       }
-      // If lock requires a code, open more-info dialog instead
+      // Determine the action based on current state
+      const action = lockState === 'locked' ? 'unlock' : 'lock';
+      // If lock requires a code, show modal to enter code
       if (state?.attributes?.code_format) {
-        this.dispatchEvent(
-          new CustomEvent('hass-more-info', {
-            bubbles: true,
-            composed: true,
-            detail: { entityId: this.entity },
-          })
-        );
+        this.showLockCodeModal(this.entity, action, state.attributes.code_format);
         return;
       }
       // Toggle based on current state - if locked, unlock; otherwise lock
@@ -1365,15 +1361,11 @@ export class AppleHomeCard extends HTMLElement {
         if (lockState === 'locking' || lockState === 'unlocking') {
           break;
         }
-        // If lock requires a code, open more-info dialog instead
+        // Determine the action based on current state
+        const lockAction = lockState === 'locked' ? 'unlock' : 'lock';
+        // If lock requires a code, show modal to enter code
         if (lockAttrs?.code_format) {
-          this.dispatchEvent(
-            new CustomEvent('hass-more-info', {
-              bubbles: true,
-              composed: true,
-              detail: { entityId },
-            })
-          );
+          this.showLockCodeModal(entityId, lockAction, lockAttrs.code_format);
           break;
         }
         // Toggle based on current state - if locked, unlock; otherwise lock
@@ -1509,5 +1501,222 @@ export class AppleHomeCard extends HTMLElement {
       // Reinitialize camera with signed URL
       this.initializeCameraWithSignedUrl();
     }
+  }
+
+  private showLockCodeModal(entityId: string, action: 'lock' | 'unlock', codeFormat: string) {
+    // Remove any existing modal
+    const existingModal = document.querySelector('.lock-code-modal-overlay');
+    if (existingModal) {
+      existingModal.remove();
+    }
+
+    const state = this._hass?.states[entityId];
+    const friendlyName = state?.attributes?.friendly_name || entityId.split('.')[1].replace(/_/g, ' ');
+    const actionText = action === 'unlock' ? localize('lock_modal.unlock') : localize('lock_modal.lock');
+    const title = `${actionText} ${friendlyName}`;
+    const placeholder = localize('lock_modal.enter_code');
+    const cancelText = localize('lock_modal.cancel');
+    const confirmText = actionText;
+
+    // Determine input type based on code_format
+    const isNumeric = /^\^?\\?d/.test(codeFormat) || codeFormat.includes('[0-9]');
+    const inputType = isNumeric ? 'tel' : 'text';
+    const inputMode = isNumeric ? 'numeric' : 'text';
+
+    // Create modal HTML
+    const modalOverlay = document.createElement('div');
+    modalOverlay.className = 'lock-code-modal-overlay';
+    modalOverlay.innerHTML = `
+      <style>
+        .lock-code-modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          animation: fadeIn 0.2s ease-out;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from { transform: translateY(20px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .lock-code-modal {
+          background: rgba(30, 30, 30, 0.95);
+          border-radius: 16px;
+          padding: 24px;
+          min-width: 300px;
+          max-width: 90vw;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+          animation: slideUp 0.3s ease-out;
+        }
+        .lock-code-modal-title {
+          color: #ffffff;
+          font-size: 18px;
+          font-weight: 600;
+          text-align: center;
+          margin-bottom: 20px;
+        }
+        .lock-code-modal-input {
+          width: 100%;
+          padding: 14px 16px;
+          font-size: 20px;
+          text-align: center;
+          letter-spacing: 8px;
+          background: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          border-radius: 12px;
+          color: #ffffff;
+          outline: none;
+          box-sizing: border-box;
+          transition: border-color 0.2s, background 0.2s;
+        }
+        .lock-code-modal-input:focus {
+          border-color: rgba(255, 255, 255, 0.4);
+          background: rgba(255, 255, 255, 0.15);
+        }
+        .lock-code-modal-input::placeholder {
+          color: rgba(255, 255, 255, 0.4);
+          letter-spacing: normal;
+        }
+        .lock-code-modal-error {
+          color: #ff6b6b;
+          font-size: 13px;
+          text-align: center;
+          margin-top: 8px;
+          min-height: 18px;
+        }
+        .lock-code-modal-buttons {
+          display: flex;
+          gap: 12px;
+          margin-top: 20px;
+        }
+        .lock-code-modal-btn {
+          flex: 1;
+          padding: 14px 20px;
+          border-radius: 12px;
+          font-size: 16px;
+          font-weight: 500;
+          cursor: pointer;
+          border: none;
+          transition: transform 0.1s, opacity 0.2s;
+        }
+        .lock-code-modal-btn:active {
+          transform: scale(0.98);
+        }
+        .lock-code-modal-btn-cancel {
+          background: rgba(255, 255, 255, 0.1);
+          color: #ffffff;
+        }
+        .lock-code-modal-btn-cancel:hover {
+          background: rgba(255, 255, 255, 0.15);
+        }
+        .lock-code-modal-btn-confirm {
+          background: ${action === 'unlock' ? '#34c759' : '#ff9500'};
+          color: #ffffff;
+        }
+        .lock-code-modal-btn-confirm:hover {
+          opacity: 0.9;
+        }
+        .lock-code-modal-btn-confirm:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      </style>
+      <div class="lock-code-modal">
+        <div class="lock-code-modal-title">${title}</div>
+        <input
+          type="${inputType}"
+          inputmode="${inputMode}"
+          class="lock-code-modal-input"
+          placeholder="${placeholder}"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+        />
+        <div class="lock-code-modal-error"></div>
+        <div class="lock-code-modal-buttons">
+          <button class="lock-code-modal-btn lock-code-modal-btn-cancel">${cancelText}</button>
+          <button class="lock-code-modal-btn lock-code-modal-btn-confirm">${confirmText}</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modalOverlay);
+
+    const input = modalOverlay.querySelector('.lock-code-modal-input') as HTMLInputElement;
+    const errorDiv = modalOverlay.querySelector('.lock-code-modal-error') as HTMLElement;
+    const cancelBtn = modalOverlay.querySelector('.lock-code-modal-btn-cancel') as HTMLButtonElement;
+    const confirmBtn = modalOverlay.querySelector('.lock-code-modal-btn-confirm') as HTMLButtonElement;
+
+    // Focus input after animation
+    setTimeout(() => input.focus(), 100);
+
+    // Close modal function
+    const closeModal = () => {
+      modalOverlay.style.animation = 'fadeIn 0.2s ease-out reverse';
+      setTimeout(() => modalOverlay.remove(), 150);
+    };
+
+    // Handle cancel
+    cancelBtn.addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) closeModal();
+    });
+
+    // Handle confirm
+    const handleConfirm = async () => {
+      const code = input.value.trim();
+      if (!code) {
+        errorDiv.textContent = localize('lock_modal.code_required');
+        input.focus();
+        return;
+      }
+
+      // Validate against code_format regex if provided
+      try {
+        const regex = new RegExp(codeFormat);
+        if (!regex.test(code)) {
+          errorDiv.textContent = localize('lock_modal.invalid_code');
+          input.focus();
+          return;
+        }
+      } catch {
+        // If regex is invalid, skip validation
+      }
+
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = '...';
+      errorDiv.textContent = '';
+
+      try {
+        await this._hass?.callService('lock', action, {
+          entity_id: entityId,
+          code: code,
+        });
+        closeModal();
+      } catch (err: any) {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = confirmText;
+        errorDiv.textContent = err?.message || localize('lock_modal.error');
+      }
+    };
+
+    confirmBtn.addEventListener('click', handleConfirm);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleConfirm();
+      if (e.key === 'Escape') closeModal();
+    });
   }
 }

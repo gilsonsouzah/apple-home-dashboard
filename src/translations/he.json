@@ -248,5 +248,14 @@
   "status_messages": {
     "unavailable": "לא זמין",
     "loading_automations": "טוען אוטומציות..."
+  },
+  "lock_modal": {
+    "lock": "נעילה",
+    "unlock": "פתיחה",
+    "enter_code": "הזן קוד",
+    "cancel": "ביטול",
+    "code_required": "אנא הזן קוד",
+    "invalid_code": "פורמט קוד לא תקין",
+    "error": "פעולה נכשלה"
   }
 }

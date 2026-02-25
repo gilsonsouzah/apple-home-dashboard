@@ -246,5 +246,14 @@
   "status_messages": {
     "unavailable": "Unavailable",
     "loading_automations": "Loading Automations..."
+  },
+  "lock_modal": {
+    "lock": "Lock",
+    "unlock": "Unlock",
+    "enter_code": "Enter code",
+    "cancel": "Cancel",
+    "code_required": "Please enter a code",
+    "invalid_code": "Invalid code format",
+    "error": "Failed to execute action"
   }
 }

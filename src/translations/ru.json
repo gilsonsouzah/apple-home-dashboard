@@ -248,5 +248,14 @@
   "status_messages": {
     "unavailable": "Недоступно",
     "loading_automations": "Загрузка Автоматизаций..."
+  },
+  "lock_modal": {
+    "lock": "Заблокировать",
+    "unlock": "Разблокировать",
+    "enter_code": "Введите код",
+    "cancel": "Отмена",
+    "code_required": "Пожалуйста, введите код",
+    "invalid_code": "Неверный формат кода",
+    "error": "Ошибка выполнения"
   }
 }
