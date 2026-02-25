@@ -140,7 +140,7 @@ No manual YAML card definitions required.
 - **Temperature Unit Detection**: Fixed temperature showing correct unit (°C/°F) for climate states
 - **iOS Safari Background**: Fixed background display issues on iOS Safari with pseudo-element approach
 - **Card Interactivity**: Fixed cards becoming unclickable after navigation
-- **Drag & Drop**: Fixed section reorder drag and drop after v1.1.0 updates
+- **Drag & Drop**: Fixed section reorder drag and drop after v1.1.1 updates
 
 ---
 
