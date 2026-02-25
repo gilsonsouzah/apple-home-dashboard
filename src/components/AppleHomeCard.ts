@@ -1497,7 +1497,7 @@ export class AppleHomeCard extends HTMLElement {
     }
   }
 
-  private showLockCodeModal(entityId: string, action: 'lock' | 'unlock', codeFormat: string) {
+  private showLockCodeModal(entityId: string, action: 'lock' | 'unlock', _codeFormat: string) {
     // Remove any existing modal
     const existingModal = document.querySelector('.lock-code-modal-overlay');
     if (existingModal) {
@@ -1507,17 +1507,10 @@ export class AppleHomeCard extends HTMLElement {
     const state = this._hass?.states[entityId];
     const friendlyName = state?.attributes?.friendly_name || entityId.split('.')[1].replace(/_/g, ' ');
     const actionText = action === 'unlock' ? localize('lock_modal.unlock') : localize('lock_modal.lock');
-    const title = `${actionText} ${friendlyName}`;
-    const placeholder = localize('lock_modal.enter_code');
     const cancelText = localize('lock_modal.cancel');
-    const confirmText = actionText;
+    const actionColor = action === 'unlock' ? '#34c759' : '#ff9500';
 
-    // Determine input type based on code_format
-    const isNumeric = /^\^?\\?d/.test(codeFormat) || codeFormat.includes('[0-9]');
-    const inputType = isNumeric ? 'tel' : 'text';
-    const inputMode = isNumeric ? 'numeric' : 'text';
-
-    // Create modal HTML
+    // Create modal HTML with PIN pad
     const modalOverlay = document.createElement('div');
     modalOverlay.className = 'lock-code-modal-overlay';
     modalOverlay.innerHTML = `
@@ -1528,166 +1521,261 @@ export class AppleHomeCard extends HTMLElement {
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
+          background: rgba(0, 0, 0, 0.7);
           display: flex;
           align-items: center;
           justify-content: center;
           z-index: 9999;
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-          animation: fadeIn 0.2s ease-out;
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          animation: lockModalFadeIn 0.2s ease-out;
         }
-        @keyframes fadeIn {
+        @keyframes lockModalFadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
         }
-        @keyframes slideUp {
-          from { transform: translateY(20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
+        @keyframes lockModalSlideUp {
+          from { transform: translateY(30px) scale(0.95); opacity: 0; }
+          to { transform: translateY(0) scale(1); opacity: 1; }
         }
         .lock-code-modal {
-          background: rgba(30, 30, 30, 0.95);
-          border-radius: 16px;
-          padding: 24px;
-          min-width: 300px;
+          background: rgba(28, 28, 30, 0.98);
+          border-radius: 24px;
+          padding: 28px 24px;
+          width: 320px;
           max-width: 90vw;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-          animation: slideUp 0.3s ease-out;
+          box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
+          animation: lockModalSlideUp 0.3s ease-out;
         }
-        .lock-code-modal-title {
-          color: #ffffff;
-          font-size: 18px;
-          font-weight: 600;
+        .lock-code-header {
           text-align: center;
-          margin-bottom: 20px;
+          margin-bottom: 24px;
         }
-        .lock-code-modal-input {
-          width: 100%;
-          padding: 14px 16px;
+        .lock-code-icon {
+          width: 56px;
+          height: 56px;
+          border-radius: 50%;
+          background: ${actionColor};
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 12px;
+        }
+        .lock-code-icon svg {
+          width: 28px;
+          height: 28px;
+          fill: #ffffff;
+        }
+        .lock-code-title {
+          color: #ffffff;
           font-size: 20px;
-          text-align: center;
-          letter-spacing: 8px;
-          background: rgba(255, 255, 255, 0.1);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          border-radius: 12px;
-          color: #ffffff;
-          outline: none;
-          box-sizing: border-box;
-          transition: border-color 0.2s, background 0.2s;
+          font-weight: 600;
+          margin-bottom: 4px;
         }
-        .lock-code-modal-input:focus {
-          border-color: rgba(255, 255, 255, 0.4);
-          background: rgba(255, 255, 255, 0.15);
+        .lock-code-subtitle {
+          color: rgba(255, 255, 255, 0.6);
+          font-size: 14px;
         }
-        .lock-code-modal-input::placeholder {
-          color: rgba(255, 255, 255, 0.4);
-          letter-spacing: normal;
+        .lock-code-display {
+          display: flex;
+          justify-content: center;
+          gap: 12px;
+          margin-bottom: 8px;
+          min-height: 48px;
+          align-items: center;
         }
-        .lock-code-modal-error {
-          color: #ff6b6b;
+        .lock-code-dot {
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.2);
+          transition: all 0.15s ease;
+        }
+        .lock-code-dot.filled {
+          background: ${actionColor};
+          transform: scale(1.1);
+        }
+        .lock-code-error {
+          color: #ff453a;
           font-size: 13px;
           text-align: center;
-          margin-top: 8px;
-          min-height: 18px;
+          min-height: 20px;
+          margin-bottom: 16px;
         }
-        .lock-code-modal-buttons {
+        .lock-code-keypad {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 12px;
+          margin-bottom: 20px;
+        }
+        .lock-code-key {
+          aspect-ratio: 1;
+          border-radius: 50%;
+          border: none;
+          background: rgba(255, 255, 255, 0.1);
+          color: #ffffff;
+          font-size: 28px;
+          font-weight: 400;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.1s ease;
+          -webkit-tap-highlight-color: transparent;
+          user-select: none;
+        }
+        .lock-code-key:hover {
+          background: rgba(255, 255, 255, 0.15);
+        }
+        .lock-code-key:active {
+          background: rgba(255, 255, 255, 0.25);
+          transform: scale(0.95);
+        }
+        .lock-code-key.action {
+          background: transparent;
+          font-size: 14px;
+          font-weight: 500;
+        }
+        .lock-code-key.action:hover {
+          background: rgba(255, 255, 255, 0.05);
+        }
+        .lock-code-key.action.confirm {
+          color: ${actionColor};
+        }
+        .lock-code-key.action.cancel {
+          color: rgba(255, 255, 255, 0.6);
+        }
+        .lock-code-key.backspace svg {
+          width: 24px;
+          height: 24px;
+          fill: #ffffff;
+        }
+        .lock-code-key:disabled {
+          opacity: 0.3;
+          cursor: not-allowed;
+        }
+        .lock-code-actions {
           display: flex;
           gap: 12px;
-          margin-top: 20px;
         }
-        .lock-code-modal-btn {
+        .lock-code-btn {
           flex: 1;
-          padding: 14px 20px;
-          border-radius: 12px;
-          font-size: 16px;
-          font-weight: 500;
+          padding: 16px;
+          border-radius: 14px;
+          font-size: 17px;
+          font-weight: 600;
           cursor: pointer;
           border: none;
-          transition: transform 0.1s, opacity 0.2s;
+          transition: all 0.15s ease;
         }
-        .lock-code-modal-btn:active {
-          transform: scale(0.98);
-        }
-        .lock-code-modal-btn-cancel {
+        .lock-code-btn-cancel {
           background: rgba(255, 255, 255, 0.1);
           color: #ffffff;
         }
-        .lock-code-modal-btn-cancel:hover {
+        .lock-code-btn-cancel:hover {
           background: rgba(255, 255, 255, 0.15);
         }
-        .lock-code-modal-btn-confirm {
-          background: ${action === 'unlock' ? '#34c759' : '#ff9500'};
+        .lock-code-btn-confirm {
+          background: ${actionColor};
           color: #ffffff;
         }
-        .lock-code-modal-btn-confirm:hover {
-          opacity: 0.9;
+        .lock-code-btn-confirm:hover {
+          filter: brightness(1.1);
         }
-        .lock-code-modal-btn-confirm:disabled {
-          opacity: 0.5;
+        .lock-code-btn-confirm:disabled {
+          opacity: 0.4;
           cursor: not-allowed;
+        }
+        .lock-code-btn:active {
+          transform: scale(0.98);
         }
       </style>
       <div class="lock-code-modal">
-        <div class="lock-code-modal-title">${title}</div>
-        <input
-          type="${inputType}"
-          inputmode="${inputMode}"
-          class="lock-code-modal-input"
-          placeholder="${placeholder}"
-          autocomplete="off"
-          autocorrect="off"
-          autocapitalize="off"
-          spellcheck="false"
-        />
-        <div class="lock-code-modal-error"></div>
-        <div class="lock-code-modal-buttons">
-          <button class="lock-code-modal-btn lock-code-modal-btn-cancel">${cancelText}</button>
-          <button class="lock-code-modal-btn lock-code-modal-btn-confirm">${confirmText}</button>
+        <div class="lock-code-header">
+          <div class="lock-code-icon">
+            <svg viewBox="0 0 24 24">
+              ${action === 'unlock' ? '<path d="M12 17a2 2 0 0 0 2-2 2 2 0 0 0-2-2 2 2 0 0 0-2 2 2 2 0 0 0 2 2m6-9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2h9V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3H7a5 5 0 0 1 5-5 5 5 0 0 1 5 5v2h1z"/>' : '<path d="M12 17a2 2 0 0 0 2-2 2 2 0 0 0-2-2 2 2 0 0 0-2 2 2 2 0 0 0 2 2m6-9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2h1V6a5 5 0 0 1 5-5 5 5 0 0 1 5 5v2h1m-6-5a3 3 0 0 0-3 3v2h6V6a3 3 0 0 0-3-3z"/>'}
+            </svg>
+          </div>
+          <div class="lock-code-title">${friendlyName}</div>
+          <div class="lock-code-subtitle">${actionText}</div>
+        </div>
+        <div class="lock-code-display">
+          <div class="lock-code-dot"></div>
+          <div class="lock-code-dot"></div>
+          <div class="lock-code-dot"></div>
+          <div class="lock-code-dot"></div>
+          <div class="lock-code-dot"></div>
+          <div class="lock-code-dot"></div>
+        </div>
+        <div class="lock-code-error"></div>
+        <div class="lock-code-keypad">
+          <button class="lock-code-key" data-key="1">1</button>
+          <button class="lock-code-key" data-key="2">2</button>
+          <button class="lock-code-key" data-key="3">3</button>
+          <button class="lock-code-key" data-key="4">4</button>
+          <button class="lock-code-key" data-key="5">5</button>
+          <button class="lock-code-key" data-key="6">6</button>
+          <button class="lock-code-key" data-key="7">7</button>
+          <button class="lock-code-key" data-key="8">8</button>
+          <button class="lock-code-key" data-key="9">9</button>
+          <button class="lock-code-key action cancel" data-key="cancel">${cancelText}</button>
+          <button class="lock-code-key" data-key="0">0</button>
+          <button class="lock-code-key backspace" data-key="backspace">
+            <svg viewBox="0 0 24 24"><path d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3 12.59L17.59 17 14 13.41 10.41 17 9 15.59 12.59 12 9 8.41 10.41 7 14 10.59 17.59 7 19 8.41 15.41 12 19 15.59z"/></svg>
+          </button>
+        </div>
+        <div class="lock-code-actions">
+          <button class="lock-code-btn lock-code-btn-confirm" disabled>${actionText}</button>
         </div>
       </div>
     `;
 
     document.body.appendChild(modalOverlay);
 
-    const input = modalOverlay.querySelector('.lock-code-modal-input') as HTMLInputElement;
-    const errorDiv = modalOverlay.querySelector('.lock-code-modal-error') as HTMLElement;
-    const cancelBtn = modalOverlay.querySelector('.lock-code-modal-btn-cancel') as HTMLButtonElement;
-    const confirmBtn = modalOverlay.querySelector('.lock-code-modal-btn-confirm') as HTMLButtonElement;
+    let code = '';
+    const maxLength = 6;
+    const dots = modalOverlay.querySelectorAll('.lock-code-dot');
+    const errorDiv = modalOverlay.querySelector('.lock-code-error') as HTMLElement;
+    const confirmBtn = modalOverlay.querySelector('.lock-code-btn-confirm') as HTMLButtonElement;
 
-    // Focus input after animation
-    setTimeout(() => input.focus(), 100);
+    const updateDisplay = () => {
+      dots.forEach((dot, i) => {
+        dot.classList.toggle('filled', i < code.length);
+      });
+      confirmBtn.disabled = code.length === 0;
+    };
 
     // Close modal function
     const closeModal = () => {
-      modalOverlay.style.animation = 'fadeIn 0.2s ease-out reverse';
+      modalOverlay.style.animation = 'lockModalFadeIn 0.2s ease-out reverse';
       setTimeout(() => modalOverlay.remove(), 150);
     };
 
-    // Handle cancel
-    cancelBtn.addEventListener('click', closeModal);
-    modalOverlay.addEventListener('click', (e) => {
-      if (e.target === modalOverlay) closeModal();
+    // Handle keypad clicks
+    modalOverlay.querySelectorAll('.lock-code-key').forEach((key) => {
+      key.addEventListener('click', (e) => {
+        const target = e.currentTarget as HTMLElement;
+        const keyValue = target.dataset.key;
+        errorDiv.textContent = '';
+
+        if (keyValue === 'cancel') {
+          closeModal();
+        } else if (keyValue === 'backspace') {
+          code = code.slice(0, -1);
+          updateDisplay();
+        } else if (keyValue && code.length < maxLength) {
+          code += keyValue;
+          updateDisplay();
+        }
+      });
     });
 
     // Handle confirm
     const handleConfirm = async () => {
-      const code = input.value.trim();
       if (!code) {
         errorDiv.textContent = localize('lock_modal.code_required');
-        input.focus();
         return;
-      }
-
-      // Validate against code_format regex if provided
-      try {
-        const regex = new RegExp(codeFormat);
-        if (!regex.test(code)) {
-          errorDiv.textContent = localize('lock_modal.invalid_code');
-          input.focus();
-          return;
-        }
-      } catch {
-        // If regex is invalid, skip validation
       }
 
       confirmBtn.disabled = true;
@@ -1702,15 +1790,38 @@ export class AppleHomeCard extends HTMLElement {
         closeModal();
       } catch (err: any) {
         confirmBtn.disabled = false;
-        confirmBtn.textContent = confirmText;
+        confirmBtn.textContent = actionText;
+        // Clear code on error
+        code = '';
+        updateDisplay();
         errorDiv.textContent = err?.message || localize('lock_modal.error');
       }
     };
 
     confirmBtn.addEventListener('click', handleConfirm);
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') handleConfirm();
-      if (e.key === 'Escape') closeModal();
+
+    // Handle clicking outside
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) closeModal();
+    });
+
+    // Handle keyboard input
+    document.addEventListener('keydown', function handler(e) {
+      if (!document.body.contains(modalOverlay)) {
+        document.removeEventListener('keydown', handler);
+        return;
+      }
+      if (e.key === 'Escape') {
+        closeModal();
+      } else if (e.key === 'Backspace') {
+        code = code.slice(0, -1);
+        updateDisplay();
+      } else if (e.key === 'Enter' && code.length > 0) {
+        handleConfirm();
+      } else if (/^\d$/.test(e.key) && code.length < maxLength) {
+        code += e.key;
+        updateDisplay();
+      }
     });
   }
 
