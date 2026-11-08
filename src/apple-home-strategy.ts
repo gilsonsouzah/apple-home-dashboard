@@ -2,7 +2,7 @@
  * Apple Home Dashboard Strategy - Stateless Implementation
  * Apple Home-like automatic dashboard for Home Assistant
  *
- * Version: 2.1.0 - Stateless Architecture
+ * Version: 2.2.0 - Energy Dashboard
  * Author: Apple Home Dashboard Team
  *
  * This follows the proven mushroom-strategy pattern of stateless configuration generation.
@@ -27,7 +27,7 @@ injectLiquidGlassStyles();
 declare global {
   interface Window {
     customCards?: any[];
-    customStrategies?: { [key: string]: any };
+    customStrategies?: any[];
     appleHomeCleanupRegistered?: boolean;
   }
 }
@@ -227,9 +227,18 @@ if (!customElements.get('apple-home-view')) {
   customElements.define('apple-home-view', AppleHomeView);
 }
 
-// Register the strategy element with Home Assistant (required pattern)
+// Register the strategy element with Home Assistant.
+// Dashboard strategies are looked up as `ll-strategy-dashboard-<type>`; without
+// that tag Home Assistant fails with "Timeout waiting for strategy element
+// ll-strategy-dashboard-apple-home-strategy" and the dashboard never loads.
+// The unprefixed name is kept for older Home Assistant versions that still
+// resolve the legacy `ll-strategy-<type>` form.
+if (!customElements.get('ll-strategy-dashboard-apple-home-strategy')) {
+  customElements.define('ll-strategy-dashboard-apple-home-strategy', AppleHomeStrategy);
+}
+
 if (!customElements.get('ll-strategy-apple-home-strategy')) {
-  customElements.define('ll-strategy-apple-home-strategy', AppleHomeStrategy);
+  customElements.define('ll-strategy-apple-home-strategy', class extends AppleHomeStrategy {});
 }
 
 // Register the strategy with Home Assistant cards list
@@ -242,6 +251,14 @@ if (window.customCards) {
   });
 }
 
-// Also register the function for backward compatibility
-window.customStrategies = window.customStrategies || {};
-window.customStrategies['apple-home-strategy'] = generateLovelaceDashboard;
+// Register the strategy with Home Assistant
+window.customStrategies = window.customStrategies || [];
+window.customStrategies.push({
+  type: 'apple-home-strategy',
+  strategyType: 'dashboard',
+  name: 'Apple Home Dashboard',
+  description: 'Apple Home-style dashboard auto-generated from your Home Assistant entities.',
+  documentationURL: 'https://github.com/nitaybz/apple-home-dashboard',
+});
+
+

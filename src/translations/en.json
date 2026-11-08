@@ -75,6 +75,7 @@
     "water": "Water",
     "media": "Speakers & TVs",
     "vacuum": "Vacuums",
+    "energy": "Energy",
     "other": "Other"
   },
   "chip_status": {
@@ -124,7 +125,9 @@
     "default_room": "Default Room",
     "favorites": "Favorites",
     "scenes": "Scenes",
-    "cameras": "Cameras"
+    "cameras": "Cameras",
+    "weather": "Weather",
+    "energy": "Energy"
   },
   "ui_actions": {
     "done": "Done",
@@ -212,6 +215,32 @@
   "camera": {
     "no_snapshot_available": "No snapshot available"
   },
+  "energy": {
+    "current_usage": "Current Usage",
+    "today": "Today",
+    "solar": "Solar",
+    "battery": "Battery",
+    "gas": "Gas",
+    "grid_return": "Grid Return",
+    "now": "NOW",
+    "active": "Active",
+    "no_data": "No energy data",
+    "day": "Day",
+    "week": "Week",
+    "month": "Month",
+    "total_consumption": "Total",
+    "cost": "Cost",
+    "vs_previous": "vs Previous",
+    "devices": "Devices",
+    "no_devices": "No devices",
+    "solar_production": "Solar Production",
+    "battery_status": "Battery",
+    "charged": "Charged",
+    "discharged": "Discharged",
+    "returned_to_grid": "Grid Return",
+    "self_sufficiency": "Self-Sufficiency",
+    "gas_consumption": "Gas Consumption"
+  },
   "errors": {
     "entity_not_found": "Entity not found",
     "error_saving_layout": "Error saving layout",
@@ -241,7 +270,16 @@
     "search_accessories": "Search for accessories...",
     "search_switches": "Search for switches...",
     "hide_ha_header": "Hide Home Assistant Header",
-    "hide_ha_sidebar": "Hide Home Assistant Sidebar"
+    "hide_ha_sidebar": "Hide Home Assistant Sidebar",
+    "weather_entity": "Weather Entity",
+    "search_weather_entity": "Search for weather entities...",
+    "weather_entity_description": "Select a weather entity to display a weather section on the home screen",
+    "show_energy": "Show Energy Section",
+    "show_energy_description": "Show an energy summary card on the home screen with current usage and daily consumption chart",
+    "show_cost": "Show Cost",
+    "show_cost_description": "Show cost figures on the energy dashboard when available",
+    "show_gas": "Show Gas",
+    "show_gas_description": "Show gas consumption on the home screen and energy dashboard when configured"
   },
   "status_messages": {
     "unavailable": "Unavailable",
@@ -255,5 +293,29 @@
     "code_required": "Please enter a code",
     "invalid_code": "Invalid code format",
     "error": "Failed to execute action"
+  },
+  "weather": {
+    "unavailable": "Weather Unavailable",
+    "humidity": "Humidity",
+    "wind": "Wind",
+    "high": "H",
+    "low": "L",
+    "conditions": {
+      "sunny": "Sunny",
+      "clear-night": "Clear",
+      "cloudy": "Cloudy",
+      "partlycloudy": "Partly Cloudy",
+      "rainy": "Rainy",
+      "pouring": "Pouring",
+      "snowy": "Snowy",
+      "snowy-rainy": "Sleet",
+      "fog": "Fog",
+      "hail": "Hail",
+      "lightning": "Lightning",
+      "lightning-rainy": "Thunderstorm",
+      "windy": "Windy",
+      "windy-variant": "Windy",
+      "exceptional": "Exceptional"
+    }
   }
 }

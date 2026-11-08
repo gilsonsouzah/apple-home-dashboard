@@ -74,6 +74,7 @@
     "water": "מים",
     "media": "רמקולים וטלוויזיות",
     "vacuum": "שואבי אבק",
+    "energy": "אנרגיה",
     "other": "אחר"
   },
   "chip_status": {
@@ -126,7 +127,9 @@
     "default_room": "חדר עיקרי",
     "favorites": "מועדפים",
     "scenes": "תרחישים",
-    "cameras": "מצלמות"
+    "cameras": "מצלמות",
+    "weather": "מזג אוויר",
+    "energy": "אנרגיה"
   },
   "ui_actions": {
     "done": "סיום",
@@ -214,6 +217,32 @@
   "camera": {
     "no_snapshot_available": "תמונה לא זמינה"
   },
+  "energy": {
+    "current_usage": "צריכה נוכחית",
+    "today": "היום",
+    "solar": "סולארי",
+    "battery": "סוללה",
+    "gas": "גז",
+    "grid_return": "החזרה לרשת",
+    "now": "עכשיו",
+    "active": "פעיל",
+    "no_data": "אין נתוני אנרגיה",
+    "day": "יום",
+    "week": "שבוע",
+    "month": "חודש",
+    "total_consumption": "סה״כ",
+    "cost": "עלות",
+    "vs_previous": "לעומת קודם",
+    "devices": "מכשירים",
+    "no_devices": "אין מכשירים",
+    "solar_production": "ייצור סולארי",
+    "battery_status": "סוללה",
+    "charged": "נטען",
+    "discharged": "פורק",
+    "returned_to_grid": "החזרה לרשת",
+    "self_sufficiency": "עצמאות אנרגטית",
+    "gas_consumption": "צריכת גז"
+  },
   "errors": {
     "entity_not_found": "ישות לא נמצאה",
     "error_saving_layout": "שגיאה בשמירת פריסה",
@@ -243,7 +272,16 @@
     "search_accessories": "חפש אביזרים...",
     "search_switches": "חפש מתגים...",
     "hide_ha_header": "הסתר את הפס העליון של Home Assistant",
-    "hide_ha_sidebar": "הסתר את תפריט הצד של Home Assistant"
+    "hide_ha_sidebar": "הסתר את תפריט הצד של Home Assistant",
+    "weather_entity": "ישות מזג אוויר",
+    "search_weather_entity": "חיפוש ישויות מזג אוויר...",
+    "weather_entity_description": "בחר ישות מזג אוויר כדי להציג מדור מזג אוויר במסך הבית",
+    "show_energy": "הצג אנרגיה",
+    "show_energy_description": "הצג כרטיס סיכום אנרגיה במסך הבית עם צריכה נוכחית ותרשים צריכה יומי",
+    "show_cost": "הצג עלות",
+    "show_cost_description": "הצג נתוני עלות בלוח האנרגיה כאשר זמינים",
+    "show_gas": "הצג גז",
+    "show_gas_description": "הצג צריכת גז במסך הבית ובלוח האנרגיה כאשר מוגדר"
   },
   "status_messages": {
     "unavailable": "לא זמין",
@@ -257,5 +295,29 @@
     "code_required": "אנא הזן קוד",
     "invalid_code": "פורמט קוד לא תקין",
     "error": "פעולה נכשלה"
+  },
+  "weather": {
+    "unavailable": "מזג אוויר לא זמין",
+    "humidity": "לחות",
+    "wind": "רוח",
+    "high": "ג",
+    "low": "נ",
+    "conditions": {
+      "sunny": "שמשי",
+      "clear-night": "בהיר",
+      "cloudy": "מעונן",
+      "partlycloudy": "מעונן חלקית",
+      "rainy": "גשום",
+      "pouring": "גשם זלעפות",
+      "snowy": "שלג",
+      "snowy-rainy": "שלג וגשם",
+      "fog": "ערפל",
+      "hail": "ברד",
+      "lightning": "ברק",
+      "lightning-rainy": "סופת רעמים",
+      "windy": "סוער",
+      "windy-variant": "סוער",
+      "exceptional": "חריג"
+    }
   }
 }

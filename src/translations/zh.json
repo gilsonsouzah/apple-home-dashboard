@@ -74,6 +74,7 @@
     "water": "水",
     "media": "音响和电视",
     "vacuum": "吸尘器",
+    "energy": "能源",
     "other": "其他"
   },
   "chip_status": {
@@ -126,7 +127,9 @@
     "default_room": "默认房间",
     "favorites": "收藏夹",
     "scenes": "场景",
-    "cameras": "摄像头"
+    "cameras": "摄像头",
+    "weather": "天气",
+    "energy": "能源"
   },
   "ui_actions": {
     "done": "完成",
@@ -214,6 +217,32 @@
   "camera": {
     "no_snapshot_available": "无快照可用"
   },
+  "energy": {
+    "current_usage": "当前用电",
+    "today": "今日",
+    "solar": "太阳能",
+    "battery": "电池",
+    "gas": "燃气",
+    "grid_return": "回馈电网",
+    "now": "现在",
+    "active": "活跃",
+    "no_data": "无能源数据",
+    "day": "日",
+    "week": "周",
+    "month": "月",
+    "total_consumption": "总计",
+    "cost": "费用",
+    "vs_previous": "对比上期",
+    "devices": "设备",
+    "no_devices": "无设备",
+    "solar_production": "太阳能发电",
+    "battery_status": "电池",
+    "charged": "充电",
+    "discharged": "放电",
+    "returned_to_grid": "回馈电网",
+    "self_sufficiency": "自给率",
+    "gas_consumption": "燃气消耗"
+  },
   "errors": {
     "entity_not_found": "实体未找到",
     "error_saving_layout": "保存布局错误",
@@ -243,7 +272,16 @@
     "search_accessories": "搜索配件...",
     "search_switches": "搜索开关...",
     "hide_ha_header": "隐藏 Home Assistant 标题栏",
-    "hide_ha_sidebar": "隐藏 Home Assistant 侧边栏"
+    "hide_ha_sidebar": "隐藏 Home Assistant 侧边栏",
+    "weather_entity": "天气实体",
+    "search_weather_entity": "搜索天气实体...",
+    "weather_entity_description": "选择一个天气实体以在主屏幕上显示天气部分",
+    "show_energy": "显示能源部分",
+    "show_energy_description": "在主屏幕上显示能源摘要卡，包含当前用电量和每日用电图表",
+    "show_cost": "显示费用",
+    "show_cost_description": "在能源仪表板上显示费用数据（如可用）",
+    "show_gas": "显示燃气",
+    "show_gas_description": "在主屏幕和能源仪表板上显示燃气消耗（如已配置）"
   },
   "status_messages": {
     "unavailable": "不可用",
@@ -257,5 +295,29 @@
     "code_required": "请输入密码",
     "invalid_code": "密码格式无效",
     "error": "操作失败"
+  },
+  "weather": {
+    "unavailable": "天气不可用",
+    "humidity": "湿度",
+    "wind": "风速",
+    "high": "高",
+    "low": "低",
+    "conditions": {
+      "sunny": "晴天",
+      "clear-night": "晴朗",
+      "cloudy": "多云",
+      "partlycloudy": "局部多云",
+      "rainy": "雨天",
+      "pouring": "大雨",
+      "snowy": "雪天",
+      "snowy-rainy": "雨夹雪",
+      "fog": "雾",
+      "hail": "冰雹",
+      "lightning": "闪电",
+      "lightning-rainy": "雷暴",
+      "windy": "大风",
+      "windy-variant": "大风",
+      "exceptional": "异常"
+    }
   }
 }

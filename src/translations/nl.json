@@ -74,6 +74,7 @@
     "water": "Water",
     "media": "Speakers & TV's",
     "vacuum": "Stofzuigers",
+    "energy": "Energie",
     "other": "Overige"
   },
   "chip_status": {
@@ -126,7 +127,9 @@
     "default_room": "Standaard Kamer",
     "favorites": "Favorieten",
     "scenes": "Scènes",
-    "cameras": "Camera's"
+    "cameras": "Camera's",
+    "weather": "Weer",
+    "energy": "Energie"
   },
   "ui_actions": {
     "done": "Klaar",
@@ -214,6 +217,32 @@
   "camera": {
     "no_snapshot_available": "Geen momentopname beschikbaar"
   },
+  "energy": {
+    "current_usage": "Huidig Verbruik",
+    "today": "Vandaag",
+    "solar": "Zonne-energie",
+    "battery": "Batterij",
+    "gas": "Gas",
+    "grid_return": "Teruglevering",
+    "now": "NU",
+    "active": "Actief",
+    "no_data": "Geen energiegegevens",
+    "day": "Dag",
+    "week": "Week",
+    "month": "Maand",
+    "total_consumption": "Totaal",
+    "cost": "Kosten",
+    "vs_previous": "vs Vorige",
+    "devices": "Apparaten",
+    "no_devices": "Geen apparaten",
+    "solar_production": "Zonneproductie",
+    "battery_status": "Batterij",
+    "charged": "Opgeladen",
+    "discharged": "Ontladen",
+    "returned_to_grid": "Teruglevering",
+    "self_sufficiency": "Zelfvoorzienend",
+    "gas_consumption": "Gasverbruik"
+  },
   "errors": {
     "entity_not_found": "Entiteit niet gevonden",
     "error_saving_layout": "Fout bij opslaan layout",
@@ -243,7 +272,16 @@
     "search_accessories": "Zoek naar accessoires...",
     "search_switches": "Zoek naar schakelaars...",
     "hide_ha_header": "Home Assistant Header Verbergen",
-    "hide_ha_sidebar": "Home Assistant Zijbalk Verbergen"
+    "hide_ha_sidebar": "Home Assistant Zijbalk Verbergen",
+    "weather_entity": "Weerentiteit",
+    "search_weather_entity": "Zoek naar weerentiteiten...",
+    "weather_entity_description": "Selecteer een weerentiteit om een weersectie op het startscherm te tonen",
+    "show_energy": "Energiesectie Tonen",
+    "show_energy_description": "Toont een energieoverzichtskaart op het startscherm met huidig verbruik en dagelijks verbruiksgrafiek",
+    "show_cost": "Kosten Tonen",
+    "show_cost_description": "Toont kostencijfers op het energiedashboard indien beschikbaar",
+    "show_gas": "Gas Tonen",
+    "show_gas_description": "Toont gasverbruik op het startscherm en energiedashboard indien geconfigureerd"
   },
   "status_messages": {
     "unavailable": "Niet beschikbaar",
@@ -257,5 +295,29 @@
     "code_required": "Voer een code in",
     "invalid_code": "Ongeldig codeformaat",
     "error": "Actie mislukt"
+  },
+  "weather": {
+    "unavailable": "Weer niet beschikbaar",
+    "humidity": "Luchtvochtigheid",
+    "wind": "Wind",
+    "high": "H",
+    "low": "L",
+    "conditions": {
+      "sunny": "Zonnig",
+      "clear-night": "Helder",
+      "cloudy": "Bewolkt",
+      "partlycloudy": "Gedeeltelijk bewolkt",
+      "rainy": "Regenachtig",
+      "pouring": "Stortbui",
+      "snowy": "Sneeuw",
+      "snowy-rainy": "Natte sneeuw",
+      "fog": "Mist",
+      "hail": "Hagel",
+      "lightning": "Bliksem",
+      "lightning-rainy": "Onweer",
+      "windy": "Winderig",
+      "windy-variant": "Winderig",
+      "exceptional": "Uitzonderlijk"
+    }
   }
 }

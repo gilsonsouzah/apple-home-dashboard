@@ -10,6 +10,12 @@ export class CustomizationManager {
   // Track the dashboard key this manager is associated with
   private currentDashboardKey: string | null = null;
   private dashboardStateListener?: (isActive: boolean, dashboardKey?: string | null) => void;
+  // While deferred, saves stay in memory instead of writing the lovelace config.
+  // Each `lovelace/config/save` makes Home Assistant re-render the dashboard from
+  // the strategy, which rebuilds AppleHomeView and drops edit mode - so saving on
+  // every drag-and-drop drop would kick the user out of edit mode each time.
+  private deferSaves = false;
+  private hasPendingSave = false;
 
   constructor(hass?: any) {
     this._hass = hass;
@@ -278,12 +284,42 @@ export class CustomizationManager {
     return orderedCards;
   }
 
+  /**
+   * Hold persistence in memory until `flushDeferredSaves()` is called.
+   * Used while the dashboard is in edit mode so that reordering cards does not
+   * trigger a lovelace config write (and the dashboard re-render it causes).
+   */
+  beginDeferredSaves(): void {
+    this.deferSaves = true;
+  }
+
+  /**
+   * Write any changes accumulated while saves were deferred and resume
+   * immediate persistence. Safe to call when nothing is pending.
+   */
+  async flushDeferredSaves(): Promise<void> {
+    this.deferSaves = false;
+
+    if (!this.hasPendingSave) {
+      return;
+    }
+
+    this.hasPendingSave = false;
+    await this.saveCustomizations();
+  }
+
   async saveCustomizations() {
     if (!this._hass) {
       console.error('🏠 APPLE HOME: No Home Assistant instance available for saving');
       return;
     }
-    
+
+    // Keep the change in memory; it is written by flushDeferredSaves().
+    if (this.deferSaves) {
+      this.hasPendingSave = true;
+      return;
+    }
+
     try {
       const success = await this.saveCustomizationsToStorage(this._hass, this.customizations);
       
@@ -401,20 +437,26 @@ export class CustomizationManager {
       // Set up interval to detect and close dashboard notifications
       let attempts = 0;
       const maxAttempts = 100; // Check for 10 seconds
-      
+
       const checkInterval = setInterval(() => {
         attempts++;
-        
+
         // Find and close the toast using the working method
         const toast = document.querySelector("home-assistant")?.shadowRoot
           ?.querySelector("notification-manager")?.shadowRoot
           ?.querySelector("ha-toast") as any;
-        
+
         if (toast && typeof toast.close === 'function') {
           toast.close();
           clearInterval(checkInterval);
+          // Remove the injected hide style so other HA notifications work
+          const injectedStyle = nm.shadowRoot?.getElementById('apple-home-dashboard-hide');
+          if (injectedStyle) injectedStyle.remove();
         } else if (attempts >= maxAttempts) {
           clearInterval(checkInterval);
+          // Remove the injected hide style even on timeout
+          const injectedStyle = nm.shadowRoot?.getElementById('apple-home-dashboard-hide');
+          if (injectedStyle) injectedStyle.remove();
         }
       }, 100);
     });
@@ -655,6 +697,30 @@ export class CustomizationManager {
     return homeData.extra_accessories || [];
   }
 
+  async getWeatherEntity(): Promise<string | undefined> {
+    await this.ensureCustomizationsLoaded();
+    const homeData = this.getCustomization('home');
+    return homeData.weather_entity || undefined;
+  }
+
+  async getShowEnergy(): Promise<boolean> {
+    await this.ensureCustomizationsLoaded();
+    const homeData = this.getCustomization('home');
+    return homeData.show_energy || false;
+  }
+
+  async getShowCost(): Promise<boolean> {
+    await this.ensureCustomizationsLoaded();
+    const homeData = this.getCustomization('home');
+    return homeData.show_cost !== false;
+  }
+
+  async getShowGas(): Promise<boolean> {
+    await this.ensureCustomizationsLoaded();
+    const homeData = this.getCustomization('home');
+    return homeData.show_gas !== false;
+  }
+
   // Dashboard state tracking methods - delegate to DashboardStateManager
   setDashboardActive(isActive: boolean): void {
     // This method is now just for backward compatibility
@@ -673,10 +739,7 @@ export class CustomizationManager {
   }
 
   isDashboardCurrentlyActive(): boolean {
-    // Delegate to DashboardStateManager for accurate state
-    return import('./DashboardStateManager').then(({ DashboardStateManager }) => {
-      return DashboardStateManager.getInstance().isDashboardActive();
-    }) as unknown as boolean;
+    return DashboardStateManager.getInstance().isDashboardActive();
   }
 
   getDashboardUrl(): string | null {

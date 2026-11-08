@@ -11,12 +11,16 @@ export interface HomeSettingsData {
   excludedFromHome: string[];
   includedSwitches: string[];
   extraAccessories: string[];
+  weatherEntity?: string;
   backgroundType: 'preset' | 'custom';
   customBackground?: string;
   presetBackground?: string;
   hideHeader?: boolean;
   hideSidebar?: boolean;
   showSwitches?: boolean;
+  showEnergy?: boolean;
+  showCost?: boolean;
+  showGas?: boolean;
 }
 
 export class HomeSettingsManager {
@@ -31,9 +35,13 @@ export class HomeSettingsManager {
     excludedFromHome: [],
     includedSwitches: [],
     extraAccessories: [],
+    weatherEntity: undefined,
     backgroundType: 'preset',
     presetBackground: BackgroundManager.DEFAULT_BACKGROUND,
-    showSwitches: false
+    showSwitches: false,
+    showEnergy: false,
+    showCost: true,
+    showGas: true
   };
   private tempSettings: HomeSettingsData = {
     favoriteAccessories: [],
@@ -41,9 +49,13 @@ export class HomeSettingsManager {
     excludedFromHome: [],
     includedSwitches: [],
     extraAccessories: [],
+    weatherEntity: undefined,
     backgroundType: 'preset',
     presetBackground: BackgroundManager.DEFAULT_BACKGROUND,
-    showSwitches: false
+    showSwitches: false,
+    showEnergy: false,
+    showCost: true,
+    showGas: true
   };
   private availableEntities: any[] = [];
   private allEntitiesForInclusion: any[] = [];
@@ -76,12 +88,16 @@ export class HomeSettingsManager {
       excludedFromHome: customizations.home?.excluded_from_home || [],
       includedSwitches: customizations.home?.included_switches || [],
       extraAccessories: customizations.home?.extra_accessories || [],
+      weatherEntity: customizations.home?.weather_entity || undefined,
       backgroundType: currentBackground.type,
       customBackground: currentBackground.type === 'custom' ? currentBackground.backgroundImage : undefined,
       presetBackground: currentBackground.type === 'preset' ? currentBackground.backgroundImage : BackgroundManager.DEFAULT_BACKGROUND,
       hideHeader: customizations.ui?.hide_header || false,
       hideSidebar: customizations.ui?.hide_sidebar || false,
-      showSwitches: customizations.home?.show_switches || false
+      showSwitches: customizations.home?.show_switches || false,
+      showEnergy: customizations.home?.show_energy || false,
+      showCost: customizations.home?.show_cost !== false,
+      showGas: customizations.home?.show_gas !== false
     };
 
     // Create a copy for temporary editing
@@ -91,14 +107,18 @@ export class HomeSettingsManager {
       excludedFromHome: [...this.settings.excludedFromHome],
       includedSwitches: [...this.settings.includedSwitches],
       extraAccessories: [...this.settings.extraAccessories],
+      weatherEntity: this.settings.weatherEntity,
       backgroundType: this.settings.backgroundType,
       customBackground: this.settings.customBackground,
       presetBackground: this.settings.presetBackground,
       hideHeader: this.settings.hideHeader,
       hideSidebar: this.settings.hideSidebar,
-      showSwitches: this.settings.showSwitches
+      showSwitches: this.settings.showSwitches,
+      showEnergy: this.settings.showEnergy,
+      showCost: this.settings.showCost,
+      showGas: this.settings.showGas
     };
-    
+
     }
 
   private async loadAvailableEntities() {
@@ -280,6 +300,42 @@ export class HomeSettingsManager {
         <p class="settings-section-description">${localize('settings.show_switches_cards_description')}</p>
       </div>
 
+      <div class="settings-section">
+        <div class="settings-card switch-card">
+          <div class="switch-setting-row">
+            <span class="option-text">${localize('settings.show_energy')}</span>
+            <div class="ui-setting-toggle" id="energy-toggle">
+              <div class="toggle-switch"></div>
+            </div>
+          </div>
+        </div>
+        <p class="settings-section-description">${localize('settings.show_energy_description')}</p>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-card switch-card">
+          <div class="switch-setting-row">
+            <span class="option-text">${localize('settings.show_cost')}</span>
+            <div class="ui-setting-toggle" id="cost-toggle">
+              <div class="toggle-switch"></div>
+            </div>
+          </div>
+        </div>
+        <p class="settings-section-description">${localize('settings.show_cost_description')}</p>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-card switch-card">
+          <div class="switch-setting-row">
+            <span class="option-text">${localize('settings.show_gas')}</span>
+            <div class="ui-setting-toggle" id="gas-toggle">
+              <div class="toggle-switch"></div>
+            </div>
+          </div>
+        </div>
+        <p class="settings-section-description">${localize('settings.show_gas_description')}</p>
+      </div>
+
       <div class="settings-section" id="included-switches-section" style="display: ${this.tempSettings.showSwitches ? 'none' : 'block'};">
         <h3 class="settings-section-header">${localize('settings.include_specific_switches')}</h3>
         <div class="settings-card">
@@ -310,6 +366,22 @@ export class HomeSettingsManager {
           </div>
         </div>
         <p class="settings-section-description">${localize('settings.extra_accessories_description')}</p>
+      </div>
+
+      <div class="settings-section">
+        <h3 class="settings-section-header">${localize('settings.weather_entity')}</h3>
+        <div class="settings-card">
+          <div class="entity-selector" data-setting="weatherEntity">
+            <div class="autocomplete-container">
+              <input type="text" class="autocomplete-input" placeholder="${localize('settings.search_weather_entity')}" />
+              <div class="autocomplete-results"></div>
+            </div>
+            <div class="selected-entities">
+              ${this.renderSelectedWeatherEntity(this.tempSettings.weatherEntity)}
+            </div>
+          </div>
+        </div>
+        <p class="settings-section-description">${localize('settings.weather_entity_description')}</p>
       </div>
 
       <div class="settings-section">
@@ -399,6 +471,18 @@ export class HomeSettingsManager {
         </div>
       `;
     }).join('');
+  }
+
+  private renderSelectedWeatherEntity(entityId?: string): string {
+    if (!entityId) return '';
+    const state = this.hass?.states?.[entityId];
+    const friendlyName = state?.attributes?.friendly_name || entityId;
+    return `
+      <div class="selected-entity-chip" data-entity-id="${entityId}">
+        <span class="entity-name">${friendlyName}</span>
+        <ha-icon icon="mdi:close" class="remove-entity"></ha-icon>
+      </div>
+    `;
   }
 
   private addModalStyles() {
@@ -955,14 +1039,26 @@ export class HomeSettingsManager {
 
   private showAutocompleteResults(query: string, resultsContainer: HTMLElement, setting: keyof HomeSettingsData) {
     const alreadySelected = this.tempSettings[setting];
-    
+
     // Use the appropriate entity list based on setting type
     let entityList: any[];
-    if (setting === 'extraAccessories') {
+    if (setting === 'weatherEntity') {
+      // For weather entity, show all weather.* entities from hass.states
+      entityList = Object.values(this.hass.states)
+        .filter((state: any) => state.entity_id.startsWith('weather.'))
+        .map((state: any) => ({
+          entity_id: state.entity_id,
+          friendly_name: state.attributes.friendly_name || state.entity_id,
+          domain: 'weather',
+          state: state.state,
+          attributes: state.attributes,
+        }))
+        .sort((a, b) => a.friendly_name.localeCompare(b.friendly_name));
+    } else if (setting === 'extraAccessories') {
       entityList = this.allEntitiesForInclusion;
-    } else if (setting === 'favoriteAccessories') {
-      // For favorites, include both available entities AND extra accessories
-      // This allows users to set manually added entities as favorites
+    } else if (setting === 'favoriteAccessories' || setting === 'excludedFromDashboard' || setting === 'excludedFromHome') {
+      // For favorites and exclude lists, include both available entities AND extra accessories
+      // This allows users to exclude/favorite manually added entities
       const extraAccessoryIds = new Set(this.tempSettings.extraAccessories);
       const includedFromOtherList = this.allEntitiesForInclusion.filter(e => extraAccessoryIds.has(e.entity_id));
       entityList = [...this.availableEntities, ...includedFromOtherList];
@@ -972,20 +1068,30 @@ export class HomeSettingsManager {
     
     // Filter entities based on query and exclude already selected ones
     let filteredEntities = entityList.filter(entity => {
-      const matchesQuery = query === '' || 
+      const matchesQuery = query === '' ||
         entity.friendly_name.toLowerCase().includes(query) ||
         entity.entity_id.toLowerCase().includes(query);
-      const notSelected = !Array.isArray(alreadySelected) || !alreadySelected.includes(entity.entity_id);
+      const notSelected = setting === 'weatherEntity'
+        ? entity.entity_id !== alreadySelected
+        : (!Array.isArray(alreadySelected) || !alreadySelected.includes(entity.entity_id));
       
       // Exclude cameras from favorites
       if (setting === 'favoriteAccessories' && entity.domain === 'camera') {
         return false;
       }
       
-      // Exclude switches from favorites, excludedFromDashboard, and excludedFromHome if showSwitches is disabled
+      // When showSwitches is disabled, only show outlets and explicitly included switches
+      // in favorites/exclude lists (since those are still visible on the dashboard)
       if (!this.tempSettings.showSwitches && entity.domain === 'switch') {
         if (setting === 'favoriteAccessories' || setting === 'excludedFromDashboard' || setting === 'excludedFromHome') {
-          return false;
+          const isOutlet = entity.attributes?.device_class === 'outlet' ||
+                           entity.entity_id.toLowerCase().includes('outlet') ||
+                           entity.friendly_name.toLowerCase().includes('outlet');
+          const isIncluded = Array.isArray(this.tempSettings.includedSwitches) &&
+                             this.tempSettings.includedSwitches.includes(entity.entity_id);
+          if (!isOutlet && !isIncluded) {
+            return false;
+          }
         }
       }
       
@@ -1089,6 +1195,11 @@ export class HomeSettingsManager {
   }
 
   private addEntityToSetting(entityId: string, setting: keyof HomeSettingsData) {
+    if (setting === 'weatherEntity') {
+      this.tempSettings.weatherEntity = entityId;
+      this.updateSelectedEntitiesDisplay(setting);
+      return;
+    }
     const settingValue = this.tempSettings[setting];
     if (Array.isArray(settingValue) && !settingValue.includes(entityId)) {
       settingValue.push(entityId);
@@ -1097,6 +1208,11 @@ export class HomeSettingsManager {
   }
 
   private removeEntityFromSetting(entityId: string, setting: keyof HomeSettingsData) {
+    if (setting === 'weatherEntity') {
+      this.tempSettings.weatherEntity = undefined;
+      this.updateSelectedEntitiesDisplay(setting);
+      return;
+    }
     const settingValue = this.tempSettings[setting];
     if (Array.isArray(settingValue)) {
       const index = settingValue.indexOf(entityId);
@@ -1111,6 +1227,11 @@ export class HomeSettingsManager {
     const selector = this.modal?.querySelector(`[data-setting="${setting}"]`);
     const selectedContainer = selector?.querySelector('.selected-entities');
     if (selectedContainer) {
+      if (setting === 'weatherEntity') {
+        selectedContainer.innerHTML = this.renderSelectedWeatherEntity(this.tempSettings.weatherEntity);
+        this.setupRemoveButtons();
+        return;
+      }
       const settingValue = this.tempSettings[setting];
       if (Array.isArray(settingValue)) {
         // Use the appropriate render method for extra accessories
@@ -1181,13 +1302,17 @@ export class HomeSettingsManager {
     }
 
     // Check if changes require a full re-render (entity list changes) vs just DOM updates (UI/background)
-    this.requiresRender = 
+    this.requiresRender =
       JSON.stringify(this.settings.favoriteAccessories) !== JSON.stringify(this.tempSettings.favoriteAccessories) ||
       JSON.stringify(this.settings.excludedFromDashboard) !== JSON.stringify(this.tempSettings.excludedFromDashboard) ||
       JSON.stringify(this.settings.excludedFromHome) !== JSON.stringify(this.tempSettings.excludedFromHome) ||
       JSON.stringify(this.settings.includedSwitches) !== JSON.stringify(this.tempSettings.includedSwitches) ||
       JSON.stringify(this.settings.extraAccessories) !== JSON.stringify(this.tempSettings.extraAccessories) ||
-      this.settings.showSwitches !== this.tempSettings.showSwitches;
+      this.settings.showSwitches !== this.tempSettings.showSwitches ||
+      this.settings.showEnergy !== this.tempSettings.showEnergy ||
+      this.settings.showCost !== this.tempSettings.showCost ||
+      this.settings.showGas !== this.tempSettings.showGas ||
+      this.settings.weatherEntity !== this.tempSettings.weatherEntity;
     
     // Apply temporary settings to actual settings
     this.settings.favoriteAccessories = [...this.tempSettings.favoriteAccessories];
@@ -1195,12 +1320,16 @@ export class HomeSettingsManager {
     this.settings.excludedFromHome = [...this.tempSettings.excludedFromHome];
     this.settings.includedSwitches = [...this.tempSettings.includedSwitches];
     this.settings.extraAccessories = [...this.tempSettings.extraAccessories];
+    this.settings.weatherEntity = this.tempSettings.weatherEntity;
     this.settings.backgroundType = this.tempSettings.backgroundType;
     this.settings.customBackground = this.tempSettings.customBackground;
     this.settings.presetBackground = this.tempSettings.presetBackground;
     this.settings.hideHeader = this.tempSettings.hideHeader;
     this.settings.hideSidebar = this.tempSettings.hideSidebar;
     this.settings.showSwitches = this.tempSettings.showSwitches;
+    this.settings.showEnergy = this.tempSettings.showEnergy;
+    this.settings.showCost = this.tempSettings.showCost;
+    this.settings.showGas = this.tempSettings.showGas;
 
     // Start modal fade immediately (while save happens in parallel)
     if (this.modal) {
@@ -1264,7 +1393,11 @@ export class HomeSettingsManager {
     home.excluded_from_home = this.settings.excludedFromHome;
     home.included_switches = this.settings.includedSwitches;
     home.extra_accessories = this.settings.extraAccessories;
+    home.weather_entity = this.settings.weatherEntity;
     home.show_switches = this.settings.showSwitches;
+    home.show_energy = this.settings.showEnergy;
+    home.show_cost = this.settings.showCost;
+    home.show_gas = this.settings.showGas;
     
     const ui = this.customizationManager.getCustomization('ui') || {};
     ui.hide_header = this.settings.hideHeader;
@@ -1321,7 +1454,10 @@ export class HomeSettingsManager {
     const headerToggle = this.modal.querySelector('#header-toggle');
     const sidebarToggle = this.modal.querySelector('#sidebar-toggle');
     const switchesToggle = this.modal.querySelector('#switches-toggle');
-    
+    const energyToggle = this.modal.querySelector('#energy-toggle');
+    const costToggle = this.modal.querySelector('#cost-toggle');
+    const gasToggle = this.modal.querySelector('#gas-toggle');
+
     headerToggle?.addEventListener('click', (e) => {
       e.stopPropagation();
       this.tempSettings.hideHeader = !this.tempSettings.hideHeader;
@@ -1347,6 +1483,24 @@ export class HomeSettingsManager {
       
       // Refresh autocomplete results for all sections that might have switch entities visible
       this.refreshAutocompleteResults();
+    });
+
+    energyToggle?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.tempSettings.showEnergy = !this.tempSettings.showEnergy;
+      this.updateUIToggle('energy-toggle', this.tempSettings.showEnergy || false);
+    });
+
+    costToggle?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.tempSettings.showCost = !this.tempSettings.showCost;
+      this.updateUIToggle('cost-toggle', this.tempSettings.showCost || false);
+    });
+
+    gasToggle?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.tempSettings.showGas = !this.tempSettings.showGas;
+      this.updateUIToggle('gas-toggle', this.tempSettings.showGas || false);
     });
 
     setTimeout(() => {
@@ -1402,6 +1556,9 @@ export class HomeSettingsManager {
     this.updateUIToggle('header-toggle', this.tempSettings.hideHeader || false);
     this.updateUIToggle('sidebar-toggle', this.tempSettings.hideSidebar || false);
     this.updateUIToggle('switches-toggle', this.tempSettings.showSwitches || false);
+    this.updateUIToggle('energy-toggle', this.tempSettings.showEnergy || false);
+    this.updateUIToggle('cost-toggle', this.tempSettings.showCost !== false);
+    this.updateUIToggle('gas-toggle', this.tempSettings.showGas !== false);
   }
 
   private openPresetsView() {

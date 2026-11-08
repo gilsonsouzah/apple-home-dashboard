@@ -75,6 +75,7 @@
     "water": "Água",
     "media": "Alto-falantes e TVs",
     "vacuum": "Aspiradores",
+    "energy": "Energia",
     "other": "Outros"
   },
   "chip_status": {
@@ -127,7 +128,9 @@
     "default_room": "Quarto Padrão",
     "favorites": "Favoritos",
     "scenes": "Cenas",
-    "cameras": "Câmeras"
+    "cameras": "Câmeras",
+    "weather": "Clima",
+    "energy": "Energia"
   },
   "ui_actions": {
     "done": "Concluído",
@@ -215,6 +218,32 @@
   "camera": {
     "no_snapshot_available": "Nenhuma captura disponível"
   },
+  "energy": {
+    "current_usage": "Consumo Atual",
+    "today": "Hoje",
+    "solar": "Solar",
+    "battery": "Bateria",
+    "gas": "Gás",
+    "grid_return": "Retorno à Rede",
+    "now": "AGORA",
+    "active": "Ativo",
+    "no_data": "Sem dados de energia",
+    "day": "Dia",
+    "week": "Semana",
+    "month": "Mês",
+    "total_consumption": "Total",
+    "cost": "Custo",
+    "vs_previous": "vs Anterior",
+    "devices": "Dispositivos",
+    "no_devices": "Sem dispositivos",
+    "solar_production": "Produção Solar",
+    "battery_status": "Bateria",
+    "charged": "Carregada",
+    "discharged": "Descarregada",
+    "returned_to_grid": "Retorno à Rede",
+    "self_sufficiency": "Autossuficiência",
+    "gas_consumption": "Consumo de Gás"
+  },
   "errors": {
     "entity_not_found": "Entidade não encontrada",
     "error_saving_layout": "Erro ao salvar layout",
@@ -244,7 +273,16 @@
     "search_accessories": "Procurar acessórios...",
     "search_switches": "Procurar interruptores...",
     "hide_ha_header": "Ocultar Cabeçalho Home Assistant",
-    "hide_ha_sidebar": "Ocultar Barra Lateral Home Assistant"
+    "hide_ha_sidebar": "Ocultar Barra Lateral Home Assistant",
+    "weather_entity": "Entidade do clima",
+    "search_weather_entity": "Pesquisar entidades do clima...",
+    "weather_entity_description": "Selecione uma entidade do clima para exibir uma seção de clima na tela inicial",
+    "show_energy": "Mostrar Seção de Energia",
+    "show_energy_description": "Mostra um cartão resumo de energia na tela inicial com consumo atual e gráfico de consumo diário",
+    "show_cost": "Mostrar Custo",
+    "show_cost_description": "Mostra os valores de custo no painel de energia quando disponíveis",
+    "show_gas": "Mostrar Gás",
+    "show_gas_description": "Mostra o consumo de gás na tela inicial e no painel de energia quando configurado"
   },
   "status_messages": {
     "unavailable": "Indisponível",
@@ -258,5 +296,29 @@
     "code_required": "Por favor, digite o código",
     "invalid_code": "Formato de código inválido",
     "error": "Falha ao executar ação"
+  },
+  "weather": {
+    "unavailable": "Clima indisponível",
+    "humidity": "Umidade",
+    "wind": "Vento",
+    "high": "H",
+    "low": "L",
+    "conditions": {
+      "sunny": "Ensolarado",
+      "clear-night": "Limpo",
+      "cloudy": "Nublado",
+      "partlycloudy": "Parcialmente nublado",
+      "rainy": "Chuvoso",
+      "pouring": "Chuva forte",
+      "snowy": "Nevando",
+      "snowy-rainy": "Chuva com neve",
+      "fog": "Nevoeiro",
+      "hail": "Granizo",
+      "lightning": "Relâmpago",
+      "lightning-rainy": "Tempestade",
+      "windy": "Ventoso",
+      "windy-variant": "Ventoso",
+      "exceptional": "Excepcional"
+    }
   }
 }

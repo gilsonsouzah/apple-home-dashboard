@@ -2,6 +2,7 @@ import { DashboardConfig, DeviceGroup } from '../config/DashboardConfig';
 import { EntityState } from '../types/types';
 import { localize } from '../utils/LocalizationService';
 import { RTLHelper } from '../utils/RTLHelper';
+import { EnergySection } from './EnergySection';
 
 export interface ChipConfig {
   group: DeviceGroup;
@@ -16,6 +17,7 @@ export interface ChipsConfig {
   security?: ChipConfig;
   media?: ChipConfig;
   water?: ChipConfig;
+  energy?: ChipConfig;
 }
 
 export interface ChipData {
@@ -131,8 +133,13 @@ export class AppleChips {
       water: {
         group: DeviceGroup.WATER,
         enabled: false,
-        show_when_zero: false,
+        show_when_zero: false
       },
+      energy: {
+        group: DeviceGroup.ENERGY,
+        enabled: true,
+        show_when_zero: false
+      }
     };
   }
 
@@ -155,7 +162,6 @@ export class AppleChips {
   set hass(hass: any) {
     // Prevent unnecessary re-renders by comparing relevant entity states
     if (hass && this._hass && this.hasRelevantEntityChanges(hass)) {
-      console.debug('[AppleChips] Relevant entity changes detected, updating hass');
       this._hass = hass;
 
       // Render when hass is set and there are relevant changes
@@ -164,7 +170,6 @@ export class AppleChips {
       }
     } else if (!this._hass) {
       // First time setting hass
-      console.debug('[AppleChips] Setting hass for the first time');
       this._hass = hass;
       if (this.config) {
         this.render();
@@ -175,48 +180,35 @@ export class AppleChips {
     }
   }
 
+  private static readonly RELEVANT_DOMAINS = new Set(['light', 'switch', 'climate', 'alarm_control_panel', 'lock', 'media_player', 'water_heater']);
+  private static readonly WATER_KEYWORDS = ['water', 'leak', 'flood'];
+
   private hasRelevantEntityChanges(newHass: any): boolean {
     if (!this._hass || !this.config) return true;
 
-    // Get all entities that could affect chips
-    const relevantDomains = [
-      'light',
-      'switch',
-      'climate',
-      'alarm_control_panel',
-      'lock',
-      'media_player',
-      'water_heater',
-    ];
-    const waterKeywords = ['water', 'leak', 'flood'];
-
-    // Check if any relevant entities changed state or attributes
+    // Only check entities whose domain is relevant, skipping the rest
     for (const entityId of Object.keys(newHass.states)) {
-      const domain = entityId.split('.')[0];
-      const isWaterEntity =
-        waterKeywords.some((keyword) => entityId.includes(keyword)) ||
-        newHass.states[entityId]?.attributes?.device_class === 'moisture';
+      const dotIdx = entityId.indexOf('.');
+      const domain = entityId.substring(0, dotIdx);
+      const isRelevantDomain = AppleChips.RELEVANT_DOMAINS.has(domain);
 
-      if (relevantDomains.includes(domain) || isWaterEntity) {
-        const oldEntity = this._hass.states[entityId];
-        const newEntity = newHass.states[entityId];
+      if (!isRelevantDomain) {
+        // Quick water keyword check only for non-relevant domains (binary_sensor, sensor)
+        if (domain !== 'binary_sensor' && domain !== 'sensor') continue;
+        const isWaterEntity = AppleChips.WATER_KEYWORDS.some(kw => entityId.includes(kw)) ||
+                             newHass.states[entityId]?.attributes?.device_class === 'moisture';
+        const isPowerEntity = domain === 'sensor' && newHass.states[entityId]?.attributes?.device_class === 'power';
+        if (!isWaterEntity && !isPowerEntity) continue;
+      }
 
-        if (!oldEntity || !newEntity) {
-          return true; // Entity added or removed
-        }
+      const oldEntity = this._hass.states[entityId];
+      const newEntity = newHass.states[entityId];
 
-        // Check if state changed
-        if (oldEntity.state !== newEntity.state) {
-          return true;
-        }
-
-        // Check if relevant attributes changed (for climate entities)
-        if (
-          domain === 'climate' &&
-          oldEntity.attributes?.current_temperature !== newEntity.attributes?.current_temperature
-        ) {
-          return true;
-        }
+      if (!oldEntity || !newEntity) return true;
+      if (oldEntity.state !== newEntity.state) return true;
+      if ((domain === 'climate' || domain === 'water_heater') &&
+          oldEntity.attributes?.current_temperature !== newEntity.attributes?.current_temperature) {
+        return true;
       }
     }
 
@@ -321,9 +313,6 @@ export class AppleChips {
       return;
     }
 
-    // Log when chips are actually re-rendering (for debugging)
-    console.debug('[AppleChips] Re-rendering chips due to state changes');
-
     const html = this.generateHTML();
 
     this.container.innerHTML = html;
@@ -340,14 +329,13 @@ export class AppleChips {
     if (!this._hass || !this.config) return;
 
     this.chips = [];
-    // Filter out hidden, disabled entities, and entities from hidden areas from chip calculations
+    // Filter out hidden, disabled, config/diagnostic entities, and entities from hidden areas
     const allEntities = Object.values(this._hass.states).filter((entity: any) => {
       const entityRegistry = this._hass.entities?.[entity.entity_id];
-      if (entityRegistry && entityRegistry.hidden_by) {
-        return false;
-      }
-      if (entityRegistry && entityRegistry.disabled_by) {
-        return false;
+      if (entityRegistry) {
+        if (entityRegistry.hidden_by || entityRegistry.disabled_by) return false;
+        // Exclude configuration and diagnostic entities from chip calculations
+        if (entityRegistry.entity_category === 'config' || entityRegistry.entity_category === 'diagnostic') return false;
       }
       // Filter out entities from hidden areas/rooms
       if (this.isEntityInHiddenArea(entity.entity_id)) {
@@ -363,6 +351,7 @@ export class AppleChips {
       { group: DeviceGroup.SECURITY, config: this.config.security },
       { group: DeviceGroup.MEDIA, config: this.config.media },
       { group: DeviceGroup.WATER, config: this.config.water },
+      { group: DeviceGroup.ENERGY, config: this.config.energy }
     ];
 
     for (const { group, config } of deviceGroups) {
@@ -421,9 +410,11 @@ export class AppleChips {
         groupEntities.push(...waterEntities);
       }
 
-      // Only show chip if there are actual entities for this group
-      // Don't show empty chips even if show_when_zero is true (that setting is for showing "0 on" status, not for empty groups)
-      const shouldShow = groupEntities.length > 0;
+      // Special handling for energy group - detect energy/power sensors
+      let shouldShow = groupEntities.length > 0;
+      if (group === DeviceGroup.ENERGY) {
+        shouldShow = EnergySection.hasEnergySensors(this._hass);
+      }
 
       if (shouldShow) {
         const groupStyle = DashboardConfig.getGroupStyle(group);
@@ -544,7 +535,7 @@ export class AppleChips {
           color: white;
           font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: background-color 0.2s ease, opacity 0.2s ease;
           user-select: none;
           -webkit-user-select: none;
           -webkit-tap-highlight-color: transparent;
@@ -560,7 +551,7 @@ export class AppleChips {
 
         /* Ensure chips maintain their position during drag operations */
         .chip-wrapper:not(.dragging) {
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .chip-wrapper.dragging {
@@ -882,7 +873,7 @@ export class AppleChips {
         break;
 
       case DeviceGroup.CLIMATE:
-        const climateEntities = entities.filter((entity) => entity.entity_id.startsWith('climate.'));
+        const climateEntities = entities.filter(entity => entity.entity_id.startsWith('climate.') || entity.entity_id.startsWith('water_heater.'));
         statusText = '--°';
 
         if (climateEntities.length > 0) {
@@ -938,6 +929,15 @@ export class AppleChips {
         const activeWater = entities.filter((entity) => entity.state === 'on' || entity.state === 'detected');
         statusText =
           activeWater.length > 0 ? `${activeWater.length} ${localize('chip_status.active')}` : localize('status.off');
+        break;
+
+      case DeviceGroup.ENERGY:
+        const totalPower = EnergySection.getTotalPower(this._hass);
+        if (totalPower !== null) {
+          statusText = totalPower >= 1000 ? `${(totalPower / 1000).toFixed(1)} kW` : `${Math.round(totalPower)} W`;
+        } else {
+          statusText = localize('energy.active');
+        }
         break;
 
       default:

@@ -5,6 +5,8 @@ import { ScenesSection } from '../sections/ScenesSection';
 import { CamerasSection } from '../sections/CamerasSection';
 import { AreaSection } from '../sections/AreaSection';
 import { StatusSection } from '../sections/StatusSection';
+import { WeatherSection } from '../sections/WeatherSection';
+import { EnergySection } from '../sections/EnergySection';
 import { Entity } from '../types/types';
 
 export class GroupPage {
@@ -13,6 +15,8 @@ export class GroupPage {
   private camerasSection?: CamerasSection;
   private areaSection?: AreaSection;
   private statusSection?: StatusSection;
+  private weatherSection?: WeatherSection;
+  private energySection?: EnergySection;
   private _hass?: any;
   private _group?: DeviceGroup;
   private _config?: any;
@@ -52,6 +56,8 @@ export class GroupPage {
       this.camerasSection = new CamerasSection(this.customizationManager);
       this.areaSection = new AreaSection(this.customizationManager);
       this.statusSection = new StatusSection(this.customizationManager);
+      this.weatherSection = new WeatherSection(this.customizationManager);
+      this.energySection = new EnergySection(this.customizationManager);
     }
   }
 
@@ -104,68 +110,62 @@ export class GroupPage {
     hass: any,
     onTallToggle?: (entityId: string, areaId: string) => void | Promise<void | boolean>
   ): Promise<void> {
-    // Preserve existing header and permanent chips elements
-    const existingHeader = container.querySelector('.apple-home-header');
-    const existingPermanentChips = container.querySelector('.permanent-chips');
+    // Remove only dynamic content, keep permanent elements (header, chips) in place
+    const permanentSelectors = ['.apple-home-header', '.permanent-chips'];
+    Array.from(container.children).forEach(child => {
+      const isPermanent = permanentSelectors.some(sel => child.matches(sel));
+      if (!isPermanent) child.remove();
+    });
 
-    // Clear container but preserve important elements
-    container.innerHTML = '';
-
-    // Re-insert preserved elements in correct order
-    if (existingHeader) {
-      container.appendChild(existingHeader);
-    }
-
-    // Add group title
+    // Add group title after header but before chips
     const groupTitle = this.createGroupTitle(group);
-    container.appendChild(groupTitle);
-
-    // Re-insert permanent chips after title (this ensures chips are always below h1)
+    const existingPermanentChips = container.querySelector('.permanent-chips');
     if (existingPermanentChips) {
-      container.appendChild(existingPermanentChips);
+      container.insertBefore(groupTitle, existingPermanentChips);
+    } else {
+      container.appendChild(groupTitle);
     }
 
     try {
-      // Get data from Home Assistant
-      const areas = await DataService.getAreas(hass);
-      const entities = await DataService.getEntities(hass);
-      const devices = await DataService.getDevices(hass);
+      // Fetch all data in parallel
+      const [areas, entities, devices] = await Promise.all([
+        DataService.getAreas(hass),
+        DataService.getEntities(hass),
+        DataService.getDevices(hass)
+      ]);
 
       // Get hidden sections (areas) for filtering
       const hiddenSections = this.customizationManager?.getHiddenSections() || [];
 
       // Filter entities for supported domains and exclude those marked for exclusion
-      const supportedEntities = entities.filter((entity) => {
+      const supportedEntities = entities.filter(entity => {
+        // Exclude configuration and diagnostic entities from auto-discovery
+        if (entity.entity_category === 'config' || entity.entity_category === 'diagnostic') {
+          return false;
+        }
         const domain = entity.entity_id.split('.')[0];
         return DashboardConfig.isSupportedDomain(domain);
       });
 
       // Create a separate list for status section that includes sensor domains
-      const statusEntities = entities.filter((entity) => {
+      const statusEntities = entities.filter(entity => {
+        // Exclude configuration and diagnostic entities from auto-discovery
+        if (entity.entity_category === 'config' || entity.entity_category === 'diagnostic') {
+          return false;
+        }
         const domain = entity.entity_id.split('.')[0];
         return DashboardConfig.isStatusDomain(domain);
       });
 
-      // Now apply exclusions asynchronously to both lists
-      // Also filter out entities from hidden areas
-      const filteredEntities = [];
-      const filteredStatusEntities = [];
+      // Batch-fetch exclusion list once, then filter synchronously
+      const excludedFromDashboard = new Set(await this.customizationManager?.getExcludedFromDashboard() || []);
 
-      for (const entity of supportedEntities) {
-        const isExcluded = (await this.customizationManager?.isEntityExcludedFromDashboard(entity.entity_id)) || false;
-        const isInHiddenArea = this.isEntityInHiddenArea(entity, devices, hiddenSections);
-        if (!isExcluded && !isInHiddenArea) {
-          filteredEntities.push(entity);
-        }
-      }
-
-      for (const entity of statusEntities) {
-        const isExcluded = (await this.customizationManager?.isEntityExcludedFromDashboard(entity.entity_id)) || false;
-        const isInHiddenArea = this.isEntityInHiddenArea(entity, devices, hiddenSections);
-        if (!isExcluded && !isInHiddenArea) {
-          filteredStatusEntities.push(entity);
-        }
-      }
+      const filteredEntities = supportedEntities.filter(entity =>
+        !excludedFromDashboard.has(entity.entity_id) && !this.isEntityInHiddenArea(entity, devices, hiddenSections)
+      );
+      const filteredStatusEntities = statusEntities.filter(entity =>
+        !excludedFromDashboard.has(entity.entity_id) && !this.isEntityInHiddenArea(entity, devices, hiddenSections)
+      );
 
       // Get all special section entities
       const scenesEntities = filteredEntities.filter((entity) =>
@@ -233,6 +233,34 @@ export class GroupPage {
 
         if (groupEntities.length > 0) {
           groupEntitiesByArea[areaId] = groupEntities;
+        }
+      }
+
+      // For ENERGY group, also include energy/power sensor entities (sensor domain isn't in SUPPORTED_DOMAINS)
+      if (group === DeviceGroup.ENERGY) {
+        const energySensors = entities.filter(entity => {
+          if (entity.entity_category === 'config' || entity.entity_category === 'diagnostic') return false;
+          if (excludedFromDashboard.has(entity.entity_id)) return false;
+          if (this.isEntityInHiddenArea(entity, devices, hiddenSections)) return false;
+          const domain = entity.entity_id.split('.')[0];
+          if (domain !== 'sensor') return false;
+          const state = hass.states[entity.entity_id];
+          if (!state) return false;
+          const dc = state.attributes?.device_class;
+          const reg = (hass.entities as any)?.[entity.entity_id];
+          if (reg?.hidden_by || reg?.disabled_by) return false;
+          return (dc === 'energy' || dc === 'power') && !!state.attributes?.state_class;
+        });
+
+        for (const entity of energySensors) {
+          const areaId = this.getEntityAreaId(entity, devices);
+          if (!areaId) continue;
+          if (!groupEntitiesByArea[areaId]) {
+            groupEntitiesByArea[areaId] = [];
+          }
+          if (!groupEntitiesByArea[areaId].some(e => e.entity_id === entity.entity_id)) {
+            groupEntitiesByArea[areaId].push(entity);
+          }
         }
       }
 
@@ -362,6 +390,23 @@ export class GroupPage {
     // Create a map of all available sections
     const availableSections = new Map<string, () => Promise<void>>();
 
+    // Add weather section for climate group if configured
+    if (this._group === DeviceGroup.CLIMATE && this.weatherSection) {
+      const weatherEntity = await this.customizationManager?.getWeatherEntity();
+      if (weatherEntity && hass.states[weatherEntity]) {
+        availableSections.set('weather_section', async () => {
+          await this.weatherSection!.render(container, hass);
+        });
+      }
+    }
+
+    // Add energy section for energy group
+    if (this._group === DeviceGroup.ENERGY && this.energySection) {
+      availableSections.set('energy_section', async () => {
+        await this.energySection!.render(container, hass, 'group');
+      });
+    }
+
     // Add scenes section if there are any scenes or scripts
     if (scenesEntities.length > 0) {
       availableSections.set('scenes_section', async () => {
@@ -403,12 +448,20 @@ export class GroupPage {
       // Add any new sections that weren't in the saved order
       for (const sectionId of availableSections.keys()) {
         if (!orderedSectionIds.includes(sectionId)) {
+          if (sectionId === 'weather_section' || sectionId === 'energy_section') {
+            orderedSectionIds.unshift(sectionId);
+          } else {
           orderedSectionIds.push(sectionId);
         }
       }
+      }
     } else {
-      // Default order: scenes, cameras, then areas alphabetically
+      // Default order: weather, energy, scenes, cameras, then areas alphabetically
       orderedSectionIds = Array.from(availableSections.keys()).sort((a, b) => {
+        if (a === 'weather_section') return -1;
+        if (b === 'weather_section') return 1;
+        if (a === 'energy_section') return -1;
+        if (b === 'energy_section') return 1;
         if (a === 'scenes_section') return -1;
         if (b === 'scenes_section') return 1;
         if (a === 'cameras_section') return -1;

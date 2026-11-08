@@ -3,11 +3,12 @@ import Sortable from 'sortablejs';
 import { localize } from './LocalizationService';
 import { RTLHelper } from './RTLHelper';
 import { injectLiquidGlassStyles, LiquidGlassClasses } from './LiquidGlassStyles';
+import { EnergySection } from '../sections/EnergySection';
 
 interface SectionItem {
   id: string;
   name: string;
-  type: 'area' | 'scenes' | 'cameras' | 'favorites';
+  type: 'area' | 'scenes' | 'cameras' | 'favorites' | 'weather' | 'energy';
   visible: boolean;
   order: number;
 }
@@ -42,6 +43,33 @@ export class SectionReorderManager {
     const sectionOrder = customizations.home?.sections?.order || [];
     const hiddenSections = customizations.home?.sections?.hidden || [];
 
+    // Add Weather section if configured
+    const weatherEntity = await this.customizationManager.getWeatherEntity();
+    if (weatherEntity && hass.states[weatherEntity]) {
+      sections.push({
+        id: 'weather_section',
+        name: localize('section_titles.weather'),
+        type: 'weather',
+        visible: !hiddenSections.includes('weather_section'),
+        order: sectionOrder.indexOf('weather_section') !== -1 ? sectionOrder.indexOf('weather_section') : 0
+      });
+    }
+
+    const hasWeather = !!(weatherEntity && hass.states[weatherEntity]);
+
+    // Add Energy section if enabled and energy sensors exist
+    const showEnergy = await this.customizationManager.getShowEnergy();
+    const hasEnergy = showEnergy && EnergySection.hasEnergySensors(hass);
+    if (hasEnergy) {
+      sections.push({
+        id: 'energy_section',
+        name: localize('section_titles.energy'),
+        type: 'energy',
+        visible: !hiddenSections.includes('energy_section'),
+        order: sectionOrder.indexOf('energy_section') !== -1 ? sectionOrder.indexOf('energy_section') : (hasWeather ? 1 : 0)
+      });
+    }
+
     // Add Cameras section (first in default order)
     const cameraEntities = Object.values(hass.states).filter((state: any) => {
       if (!state.entity_id.startsWith('camera.')) {
@@ -61,14 +89,13 @@ export class SectionReorderManager {
 
       return true;
     });
-
     if (cameraEntities.length > 0) {
       sections.push({
         id: 'cameras_section',
         name: localize('section_titles.cameras'),
         type: 'cameras',
         visible: !hiddenSections.includes('cameras_section'),
-        order: sectionOrder.indexOf('cameras_section') !== -1 ? sectionOrder.indexOf('cameras_section') : 0,
+        order: sectionOrder.indexOf('cameras_section') !== -1 ? sectionOrder.indexOf('cameras_section') : (hasWeather ? 1 : 0) + (hasEnergy ? 1 : 0)
       });
     }
 
@@ -93,7 +120,7 @@ export class SectionReorderManager {
     });
 
     if (scenesEntities.length > 0) {
-      const baseOrder = cameraEntities.length > 0 ? 1 : 0;
+      const baseOrder = (hasWeather ? 1 : 0) + (hasEnergy ? 1 : 0) + (cameraEntities.length > 0 ? 1 : 0);
       sections.push({
         id: 'scenes_section',
         name: localize('section_titles.scenes'),
@@ -106,7 +133,7 @@ export class SectionReorderManager {
     // Add Favorites section (third in default order)
     const favoriteAccessories = await this.customizationManager.getFavoriteAccessories();
     if (favoriteAccessories.length > 0) {
-      const baseOrder = (cameraEntities.length > 0 ? 1 : 0) + (scenesEntities.length > 0 ? 1 : 0);
+      const baseOrder = (hasWeather ? 1 : 0) + (hasEnergy ? 1 : 0) + (cameraEntities.length > 0 ? 1 : 0) + (scenesEntities.length > 0 ? 1 : 0);
       sections.push({
         id: 'favorites_section',
         name: localize('section_titles.favorites'),
@@ -120,7 +147,8 @@ export class SectionReorderManager {
     areas.forEach((area, index) => {
       const areaId = area.area_id || area.id;
       const areaName = area.name || areaId;
-      const baseOrder =
+      const baseOrder = (hasWeather ? 1 : 0) +
+                       (hasEnergy ? 1 : 0) +
         (cameraEntities.length > 0 ? 1 : 0) +
         (scenesEntities.length > 0 ? 1 : 0) +
         (favoriteAccessories.length > 0 ? 1 : 0) +

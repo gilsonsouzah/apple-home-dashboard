@@ -29,7 +29,8 @@ export enum DeviceGroup {
   WATER = 'water',
   MEDIA = 'media',
   VACUUM = 'vacuum',
-  OTHER = 'other',
+  ENERGY = 'energy',
+  OTHER = 'other'
 }
 
 export interface GroupStyle {
@@ -107,6 +108,11 @@ export class DashboardConfig {
       iconColor: '#ff9500', // Soft orange for vacuums (Apple Home style)
       icon: 'mdi:robot-vacuum',
       name: () => localize('groups.vacuum'),
+    },
+    [DeviceGroup.ENERGY]: {
+      iconColor: '#34C759', // Green for energy (Apple's energy color)
+      icon: 'mdi:flash',
+      name: () => localize('groups.energy')
     },
     [DeviceGroup.OTHER]: {
       iconColor: '#ffcc0f', // Yellow for switches/outlets (same as lights)
@@ -281,6 +287,10 @@ export class DashboardConfig {
       // Illuminance/light sensors go to Lighting
       if (deviceClass === 'illuminance' || unitOfMeasurement === 'lx') {
         return DeviceGroup.LIGHTING;
+      }
+      // Energy and power sensors go to Energy
+      if (deviceClass === 'energy' || deviceClass === 'power') {
+        return DeviceGroup.ENERGY;
       }
       // Battery sensors go to Other (or could be shown anywhere)
       if (deviceClass === 'battery') {
@@ -464,6 +474,8 @@ export class DashboardConfig {
         return entityState === 'open' ? 'mdi:window-shutter-open' : 'mdi:window-shutter';
       case 'climate':
         return 'mdi:thermostat';
+      case 'water_heater':
+        return 'mdi:water-boiler';
       case 'fan':
         return 'mdi:fan';
       case 'media_player':
@@ -480,8 +492,28 @@ export class DashboardConfig {
         return 'mdi:gesture-tap-button';
       case 'vacuum':
         return entityState === 'cleaning' ? 'mdi:robot-vacuum' : 'mdi:robot-vacuum';
-      case 'water_heater':
-        return 'mdi:water-boiler';
+      case 'sensor': {
+        const dc = attributes?.device_class;
+        if (dc === 'energy') return 'mdi:flash';
+        if (dc === 'power') return 'mdi:flash';
+        if (dc === 'temperature') return 'mdi:thermometer';
+        if (dc === 'humidity') return 'mdi:water-percent';
+        if (dc === 'battery') return 'mdi:battery';
+        if (dc === 'illuminance') return 'mdi:brightness-5';
+        return 'mdi:eye';
+      }
+      case 'binary_sensor': {
+        const bdc = attributes?.device_class;
+        if (bdc === 'motion') return entityState === 'on' ? 'mdi:motion-sensor' : 'mdi:motion-sensor-off';
+        if (bdc === 'door') return entityState === 'on' ? 'mdi:door-open' : 'mdi:door-closed';
+        if (bdc === 'window') return entityState === 'on' ? 'mdi:window-open' : 'mdi:window-closed';
+        if (bdc === 'smoke') return 'mdi:smoke-detector';
+        if (bdc === 'gas') return 'mdi:gas-cylinder';
+        if (bdc === 'moisture') return 'mdi:water-alert';
+        if (bdc === 'occupancy') return 'mdi:home-account';
+        if (bdc === 'light') return 'mdi:brightness-5';
+        return entityState === 'on' ? 'mdi:checkbox-marked-circle' : 'mdi:checkbox-blank-circle-outline';
+      }
       default:
         return 'mdi:help-circle';
     }
@@ -492,7 +524,8 @@ export class DashboardConfig {
    * Climate uses mode-specific colors but follows same icon/background logic
    */
   private static applyClimateStyling(entityState: string, isActive: boolean): Partial<EntityData> {
-    const climateColor = (CLIMATE_MODE_COLORS as any)[entityState] || CLIMATE_MODE_COLORS.off;
+    // Use known mode color, or fall back to heat orange for active / white for off
+    const climateColor = (CLIMATE_MODE_COLORS as any)[entityState] || (isActive ? CLIMATE_MODE_COLORS.heat : CLIMATE_MODE_COLORS.off);
 
     if (isActive) {
       // Active climate: white icon, colored background (but transparent for climate)
@@ -601,7 +634,6 @@ export class DashboardConfig {
     // Apply styling based on domain and state
     let styling: Partial<EntityData>;
     if (domain === 'climate') {
-      // Climate domain uses special mode-based colors
       styling = this.applyClimateStyling(entityState, isActive);
     } else if (domain === 'water_heater') {
       // Water heater domain uses special mode-based colors similar to climate
@@ -648,6 +680,7 @@ export class DashboardConfig {
         result = entityState === 'open' || entityState === 'opening';
         break;
       case 'climate':
+      case 'water_heater':
         result = entityState !== 'off';
         break;
       case 'media_player':
@@ -724,6 +757,9 @@ export class DashboardConfig {
       case 'climate':
         return this.getClimateStateText(entityState, attributes, hass);
 
+      case 'water_heater':
+        return this.getWaterHeaterStateText(entityState, attributes, hass);
+
       case 'fan':
         if (entityState === 'on' && attributes.percentage && typeof attributes.percentage === 'number') {
           return `${attributes.percentage}%`;
@@ -786,6 +822,31 @@ export class DashboardConfig {
   }
 
   /**
+   * Get water heater-specific state text
+   */
+  private static getWaterHeaterStateText(entityState: string, attributes: any, hass?: any): string {
+    const targetTemp = attributes.temperature;
+    const tempUnit = attributes.unit_of_measurement || hass?.config?.unit_system?.temperature || '°C';
+
+    if (entityState === 'off') {
+      return localize('status.off');
+    }
+
+    // Handle boolean-like or unknown states from some integrations
+    const lowerState = entityState.toLowerCase();
+    const isGenericOn = lowerState === 'true' || lowerState === 'on';
+    const modeLabel = isGenericOn
+      ? localize('status.on')
+      : entityState.charAt(0).toUpperCase() + entityState.slice(1).replace(/_/g, ' ');
+
+    if (targetTemp) {
+      return `${modeLabel} · ${targetTemp}${tempUnit}`;
+    }
+
+    return modeLabel;
+  }
+
+  /**
    * Get media player-specific state text
    */
   private static getMediaPlayerStateText(entityState: string): string {
@@ -828,37 +889,6 @@ export class DashboardConfig {
         return localize('status.off');
       default:
         return entityState.charAt(0).toUpperCase() + entityState.slice(1);
-    }
-  }
-
-  /**
-   * Get water heater-specific state text
-   */
-  private static getWaterHeaterStateText(entityState: string, attributes: any, hass?: any): string {
-    const currentTemp = attributes.current_temperature;
-    // Get temperature unit from entity attributes, or from Home Assistant config, or fallback to °C
-    const tempUnit = attributes.unit_of_measurement || hass?.config?.unit_system?.temperature || '°C';
-
-    switch (entityState) {
-      case 'electric':
-      case 'gas':
-      case 'heat_pump':
-      case 'eco':
-      case 'high_demand':
-      case 'performance':
-        // For active modes, show current temperature
-        if (currentTemp !== undefined) {
-          return `${localize('status.current')}: ${currentTemp}${tempUnit}`;
-        }
-        return localize('status.on');
-      case 'off':
-        return localize('status.off');
-      default:
-        // For any other state, try to show current temp if available
-        if (currentTemp !== undefined && entityState !== 'off') {
-          return `${localize('status.current')}: ${currentTemp}${tempUnit}`;
-        }
-        return entityState === 'off' ? localize('status.off') : localize('status.on');
     }
   }
 

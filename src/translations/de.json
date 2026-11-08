@@ -74,6 +74,7 @@
     "water": "Wasser",
     "media": "Lautsprecher & TVs",
     "vacuum": "Staubsauger",
+    "energy": "Energie",
     "other": "Andere"
   },
   "chip_status": {
@@ -126,7 +127,9 @@
     "default_room": "Standard Raum",
     "favorites": "Favoriten",
     "scenes": "Szenen",
-    "cameras": "Kameras"
+    "cameras": "Kameras",
+    "weather": "Wetter",
+    "energy": "Energie"
   },
   "ui_actions": {
     "done": "Fertig",
@@ -214,6 +217,32 @@
   "camera": {
     "no_snapshot_available": "Keine Momentaufnahme verfügbar"
   },
+  "energy": {
+    "current_usage": "Aktueller Verbrauch",
+    "today": "Heute",
+    "solar": "Solar",
+    "battery": "Batterie",
+    "gas": "Gas",
+    "grid_return": "Netzeinspeisung",
+    "now": "JETZT",
+    "active": "Aktiv",
+    "no_data": "Keine Energiedaten",
+    "day": "Tag",
+    "week": "Woche",
+    "month": "Monat",
+    "total_consumption": "Gesamt",
+    "cost": "Kosten",
+    "vs_previous": "vs Vorherig",
+    "devices": "Geräte",
+    "no_devices": "Keine Geräte",
+    "solar_production": "Solarproduktion",
+    "battery_status": "Batterie",
+    "charged": "Geladen",
+    "discharged": "Entladen",
+    "returned_to_grid": "Netzeinspeisung",
+    "self_sufficiency": "Autarkie",
+    "gas_consumption": "Gasverbrauch"
+  },
   "errors": {
     "entity_not_found": "Entität nicht gefunden",
     "error_saving_layout": "Fehler beim Speichern des Layouts",
@@ -243,7 +272,16 @@
     "search_accessories": "Nach Zubehör suchen...",
     "search_switches": "Nach Schaltern suchen...",
     "hide_ha_header": "Home Assistant Header Verbergen",
-    "hide_ha_sidebar": "Home Assistant Seitenleiste Verbergen"
+    "hide_ha_sidebar": "Home Assistant Seitenleiste Verbergen",
+    "weather_entity": "Wetter-Entität",
+    "search_weather_entity": "Nach Wetter-Entitäten suchen...",
+    "weather_entity_description": "Wählen Sie eine Wetter-Entität aus, um einen Wetterbereich auf dem Startbildschirm anzuzeigen",
+    "show_energy": "Energiebereich anzeigen",
+    "show_energy_description": "Zeigt eine Energieübersichtskarte auf dem Startbildschirm mit aktuellem Verbrauch und Tagesverbrauchsdiagramm",
+    "show_cost": "Kosten anzeigen",
+    "show_cost_description": "Zeigt Kostenangaben im Energie-Dashboard, sofern verfügbar",
+    "show_gas": "Gas anzeigen",
+    "show_gas_description": "Zeigt den Gasverbrauch auf dem Startbildschirm und im Energie-Dashboard, sofern konfiguriert"
   },
   "status_messages": {
     "unavailable": "Nicht verfügbar",
@@ -257,5 +295,29 @@
     "code_required": "Bitte geben Sie einen Code ein",
     "invalid_code": "Ungültiges Codeformat",
     "error": "Aktion fehlgeschlagen"
+  },
+  "weather": {
+    "unavailable": "Wetter nicht verfügbar",
+    "humidity": "Luftfeuchtigkeit",
+    "wind": "Wind",
+    "high": "H",
+    "low": "T",
+    "conditions": {
+      "sunny": "Sonnig",
+      "clear-night": "Klar",
+      "cloudy": "Bewölkt",
+      "partlycloudy": "Teilweise bewölkt",
+      "rainy": "Regnerisch",
+      "pouring": "Starkregen",
+      "snowy": "Schnee",
+      "snowy-rainy": "Schneeregen",
+      "fog": "Nebel",
+      "hail": "Hagel",
+      "lightning": "Blitz",
+      "lightning-rainy": "Gewitter",
+      "windy": "Windig",
+      "windy-variant": "Windig",
+      "exceptional": "Außergewöhnlich"
+    }
   }
 }
