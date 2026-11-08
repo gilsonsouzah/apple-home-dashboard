@@ -1,5 +1,7 @@
 # 🏠 Apple Home Dashboard Strategy
 
+<img src="https://raw.githubusercontent.com/gilsonsouzah/apple-home-dashboard/main/assets/icon.png" alt="Apple Home Dashboard" width="128">
+
 A pixel‑level Apple Home style dashboard for Home Assistant. Instantly turns your Lovelace dashboard into an iOS Home app experience: familiar layout, section structure, color language, typography, card behaviors, navigation and editing flow – all automatic.
 
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024%2E7%2B-03a9f4)
@@ -109,7 +111,7 @@ No manual YAML card definitions required.
 
 ---
 
-## 🆕 Recent Improvements (v1.1.5 & v1.1.5)
+## 🆕 Recent Improvements
 
 ### Automatic Dashboard Updates
 
@@ -140,7 +142,7 @@ No manual YAML card definitions required.
 - **Temperature Unit Detection**: Fixed temperature showing correct unit (°C/°F) for climate states
 - **iOS Safari Background**: Fixed background display issues on iOS Safari with pseudo-element approach
 - **Card Interactivity**: Fixed cards becoming unclickable after navigation
-- **Drag & Drop**: Fixed section reorder drag and drop after v1.1.5 updates
+- **Drag & Drop**: Fixed section reorder drag and drop after v1.1.0 updates
 
 ---
 
