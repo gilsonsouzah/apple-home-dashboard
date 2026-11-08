@@ -200,7 +200,13 @@ export class BackgroundManager {
     const styleElement = document.createElement('style');
     styleElement.id = 'apple-home-body-background';
     
+    // HA 2026.11+ paints the theme background on partial-panel-resolver::before and
+    // hui-view-background (z-index -1, isolated), which covers body::after.
     styleElement.textContent = `
+      :root {
+        --ha-panel-background: transparent !important;
+        --lovelace-background: transparent !important;
+      }
       body::after {
         content: "";
         position: fixed;
